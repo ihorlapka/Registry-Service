@@ -1,0 +1,26 @@
+server:
+  servlet:
+    context-path: /iot-registry
+spring:
+  application:
+    name: registry-service
+  datasource:
+    url: some_url
+    username: some_user
+    password: some_password
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  devtools:
+    restart:
+      enabled: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
