@@ -5,8 +5,11 @@ import com.iot.devices.management.registry_service.controller.util.UserDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.repos.UsersRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -21,14 +24,14 @@ import static java.util.Optional.ofNullable;
 
 @Slf4j
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UsersRepository repo;
 
     @PostMapping
-    public ResponseEntity<UserDTO> createUser(@RequestBody CreateUserRequest request) {
+    public ResponseEntity<UserDTO> createUser(@RequestBody @Valid CreateUserRequest request) {
         final Optional<User> user = repo.findByEmail(request.email());
         if (user.isPresent()) {
             throw new DuplicateUserException(request.email());
@@ -44,7 +47,7 @@ public class UserController {
     }
 
     @PatchMapping
-    public ResponseEntity<UserDTO> patchUser(@RequestBody PatchUserRequest request) {
+    public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request) {
         final Optional<User> user = repo.findById(request.id());
         if (user.isEmpty()) {
             throw new UserNotFoundException(request.id());
@@ -56,8 +59,8 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserDTO>> getAllUsers() {
-        final List<User> users = repo.findAll();
+    public ResponseEntity<List<UserDTO>> getAllUsers(Pageable pageable) {
+        final Page<User> users = repo.findAll(pageable);
         final List<UserDTO> userDTOS = users.stream().map(this::getUserInfo).toList();
         return ResponseEntity.ok(userDTOS);
     }
@@ -69,8 +72,8 @@ public class UserController {
                 .orElseThrow(() -> new UserNotFoundException(id));
     }
 
-    @GetMapping("{firstName}/{lastName}")
-    public ResponseEntity<UserDTO> findByEmail(@PathVariable String email) {
+    @GetMapping("email/{email}")
+    public ResponseEntity<UserDTO> findByEmail(@PathVariable @Valid String email) {
         final Optional<User> user = repo.findByEmail(email);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
                 .orElseThrow(() -> new UserNotFoundException(email));
