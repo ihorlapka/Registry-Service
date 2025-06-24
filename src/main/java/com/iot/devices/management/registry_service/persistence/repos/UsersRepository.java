@@ -12,14 +12,15 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface UsersRepository extends JpaRepository<User, Long> {
+public interface UsersRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(@NonNull @Email String email);
 
     @Modifying
     @Transactional(isolation = Isolation.READ_COMMITTED)
     @Query("DELETE FROM User u WHERE u.id = :id")
-    int removeById(@NonNull @Param("id") Long id);
+    int removeById(@NonNull @Param("id") UUID id);
 }

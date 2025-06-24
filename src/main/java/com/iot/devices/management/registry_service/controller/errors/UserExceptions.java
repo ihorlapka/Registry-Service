@@ -1,9 +1,11 @@
 package com.iot.devices.management.registry_service.controller.errors;
 
+import java.util.UUID;
+
 public class UserExceptions {
 
     public static class UserNotFoundException extends RuntimeException {
-        public UserNotFoundException(Long id) {
+        public UserNotFoundException(UUID id) {
             super("User with id: " + id + " not found.");
         }
         public UserNotFoundException(String email) {

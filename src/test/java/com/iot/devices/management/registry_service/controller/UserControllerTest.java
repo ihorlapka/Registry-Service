@@ -1,7 +1,9 @@
 package com.iot.devices.management.registry_service.controller;
 
+import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
-import com.iot.devices.management.registry_service.persistence.repos.UsersRepository;
+import com.iot.devices.management.registry_service.persistence.model.UserRole;
+import com.iot.devices.management.registry_service.persistence.services.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -12,7 +14,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
+import java.util.UUID;
 
+import static java.time.OffsetDateTime.now;
 import static org.hibernate.internal.util.collections.CollectionHelper.listOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -33,59 +37,66 @@ class UserControllerTest {
     MockMvc mockMvc;
 
     @MockitoBean
-    UsersRepository usersRepository;
+    UserService userService;
 
 
+    String username = "jonndoe123";
     String firstName = "John";
     String lastName = "Doe";
     String phone = "+12345678";
     String email = "someemail@gmail.com";
     String address = "St. Privet";
+    String passwrdHash = "jwheknrmlear";
+    String userRole = "USER";
 
     String json = """
             {
+              "username": "%s",
               "firstName": "%s",
               "lastName" : "%s",
               "phone"    : "%s",
               "email"    : "%s",
-              "address"  : "%s"
+              "address"  : "%s",
+              "passwordHash"  : "%s",
+              "userRole"  : "%s"
             }
-            """.formatted(firstName, lastName, phone, email, address);
+            """.formatted(username, firstName, lastName, phone, email, address, passwrdHash, userRole);
 
 
-    User USER = new User(1L, firstName, lastName, email, phone, address);
+    UUID USER_ID = UUID.randomUUID();
+    User USER = new User(USER_ID, username, firstName, lastName, email, phone, address, passwrdHash, UserRole.USER, now(), now(), now());
 
     @Test
     void createUser() throws Exception {
-        when(usersRepository.save(any())).thenReturn(USER);
+        when(userService.save(any())).thenReturn(USER);
         mockMvc.perform(post("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated());
-        verify(usersRepository).findByEmail(email);
-        verify(usersRepository).save(any());
+        verify(userService).findByEmail(email);
+        verify(userService).save(any());
     }
 
     @Test
     void duplicatedUser() throws Exception {
-        when(usersRepository.findByEmail(email)).thenReturn(Optional.of(USER));
+        when(userService.findByEmail(email)).thenReturn(Optional.of(USER));
         mockMvc.perform(post("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isConflict());
-        verify(usersRepository).findByEmail(email);
-        verifyNoMoreInteractions(usersRepository);
+        verify(userService).findByEmail(email);
+        verifyNoMoreInteractions(userService);
     }
 
     @Test
     void dbIsDown() throws Exception {
-        when(usersRepository.findByEmail(email)).thenThrow(new DataAccessResourceFailureException("Db is down!"));
+        when(userService.findByEmail(email)).thenThrow(new DataAccessResourceFailureException("Db is down!"));
         mockMvc.perform(post("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isInternalServerError());
-        verify(usersRepository).findByEmail(email);
-        verifyNoMoreInteractions(usersRepository);
+        verify(userService).findByEmail(email);
+        verifyNoMoreInteractions(userService);
     }
 
     @Test
@@ -96,17 +107,17 @@ class UserControllerTest {
               "id": "%s",
               "address"  : "%s"
             }
-            """.formatted(1, patchedAddress);
-        when(usersRepository.findById(1L)).thenReturn(Optional.of(USER));
+            """.formatted(USER_ID, patchedAddress);
+        when(userService.findById(USER_ID)).thenReturn(Optional.of(USER));
         USER.setAddress(patchedAddress);
-        when(usersRepository.save(any())).thenReturn(USER);
+        when(userService.patch(any(PatchUserRequest.class), any(User.class))).thenReturn(USER);
         mockMvc.perform(patch("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(patch))
                 .andExpect(status().isOk());
-        verify(usersRepository).findById(1L);
-        verify(usersRepository).save(any(User.class));
-        verifyNoMoreInteractions(usersRepository);
+        verify(userService).findById(USER_ID);
+        verify(userService).patch(any(PatchUserRequest.class), any(User.class));
+        verifyNoMoreInteractions(userService);
     }
 
     @Test
@@ -117,57 +128,57 @@ class UserControllerTest {
               "id": "%s",
               "address"  : "%s"
             }
-            """.formatted(1, patchedAddress);
-        when(usersRepository.findById(1L)).thenReturn(Optional.empty());
+            """.formatted(USER_ID, patchedAddress);
+        when(userService.findById(USER_ID)).thenReturn(Optional.empty());
         mockMvc.perform(patch("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(patch))
                 .andExpect(status().isNotFound());
-        verify(usersRepository).findById(1L);
-        verifyNoMoreInteractions(usersRepository);
+        verify(userService).findById(USER_ID);
+        verifyNoMoreInteractions(userService);
     }
 
     @Test
     void getAllUsers() throws Exception {
-        when(usersRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(listOf(USER)));
+        when(userService.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(listOf(USER)));
         mockMvc.perform(get("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk());
-        verify(usersRepository).findAll(any(Pageable.class));
-        verifyNoMoreInteractions(usersRepository);
+        verify(userService).findAll(any(Pageable.class));
+        verifyNoMoreInteractions(userService);
     }
 
     @Test
     void getUserById() throws Exception {
-        when(usersRepository.findById(anyLong())).thenReturn(Optional.of(USER));
-        mockMvc.perform(get("/api/v1/users/1")
+        when(userService.findById(any())).thenReturn(Optional.of(USER));
+        mockMvc.perform(get("/api/v1/users/" + USER_ID)
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk());
-        verify(usersRepository).findById(any());
-        verifyNoMoreInteractions(usersRepository);
+        verify(userService).findById(any());
+        verifyNoMoreInteractions(userService);
     }
 
     @Test
     void findByEmail() throws Exception {
-        when(usersRepository.findByEmail(email)).thenReturn(Optional.of(USER));
+        when(userService.findByEmail(email)).thenReturn(Optional.of(USER));
         mockMvc.perform(get("/api/v1/users/email/" + email)
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk());
-        verify(usersRepository).findByEmail(any());
-        verifyNoMoreInteractions(usersRepository);
+        verify(userService).findByEmail(any());
+        verifyNoMoreInteractions(userService);
     }
 
     @Test
     void deleteUser() throws Exception {
-        when(usersRepository.removeById(anyLong())).thenReturn(1);
-        mockMvc.perform(delete("/api/v1/users/1")
+        when(userService.removeById(any())).thenReturn(1);
+        mockMvc.perform(delete("/api/v1/users/" + USER_ID)
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isNoContent());
-        verify(usersRepository).removeById(anyLong());
-        verifyNoMoreInteractions(usersRepository);
+        verify(userService).removeById(any());
+        verifyNoMoreInteractions(userService);
     }
 }

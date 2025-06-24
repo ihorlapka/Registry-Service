@@ -4,7 +4,7 @@ import com.iot.devices.management.registry_service.controller.util.PatchUserRequ
 import com.iot.devices.management.registry_service.controller.util.UserDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
-import com.iot.devices.management.registry_service.persistence.repos.UsersRepository;
+import com.iot.devices.management.registry_service.persistence.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +17,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.iot.devices.management.registry_service.controller.errors.UserExceptions.*;
-
-import static java.util.Optional.ofNullable;
 
 @Slf4j
 @RestController
@@ -28,16 +27,15 @@ import static java.util.Optional.ofNullable;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UsersRepository repo;
+    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<UserDTO> createUser(@RequestBody @Valid CreateUserRequest request) {
-        final Optional<User> user = repo.findByEmail(request.email());
+        final Optional<User> user = userService.findByEmail(request.email());
         if (user.isPresent()) {
             throw new DuplicateUserException(request.email());
         }
-        final User userEntity = mapUser(request);
-        final User saved = repo.save(userEntity);
+        final User saved = userService.save(request);
         final URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(saved.getId())
@@ -48,62 +46,47 @@ public class UserController {
 
     @PatchMapping
     public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request) {
-        final Optional<User> user = repo.findById(request.id());
+        final Optional<User> user = userService.findById(request.id());
         if (user.isEmpty()) {
             throw new UserNotFoundException(request.id());
         }
-        final User patched = patch(request,  user.get());
-        final User saved = repo.save(patched);
+        final User saved = userService.patch(request, user.get());
         final UserDTO userDTO = getUserInfo(saved);
         return ResponseEntity.ok(userDTO);
     }
 
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers(Pageable pageable) {
-        final Page<User> users = repo.findAll(pageable);
+        final Page<User> users = userService.findAll(pageable);
         final List<UserDTO> userDTOS = users.stream().map(this::getUserInfo).toList();
         return ResponseEntity.ok(userDTOS);
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
-        final Optional<User> user = repo.findById(id);
+    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID id) {
+        final Optional<User> user = userService.findById(id);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
                 .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @GetMapping("email/{email}")
     public ResponseEntity<UserDTO> findByEmail(@PathVariable @Valid String email) {
-        final Optional<User> user = repo.findByEmail(email);
+        final Optional<User> user = userService.findByEmail(email);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
                 .orElseThrow(() -> new UserNotFoundException(email));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        final int removedUser = repo.removeById(id);
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
+        final int removedUser = userService.removeById(id);
         if (removedUser < 1) {
             throw new UserNotFoundException(id);
         }
         return ResponseEntity.noContent().build();
     }
 
-    private User mapUser(CreateUserRequest request) {
-        return new User(null, request.firstName(), request.lastName(),
-                request.email(), request.phone(), request.address());
-    }
-
-    private User patch(PatchUserRequest request, User user) {
-        ofNullable(request.firstName()).ifPresent(user::setFirstName);
-        ofNullable(request.lastName()).ifPresent(user::setLastName);
-        ofNullable(request.phone()).ifPresent(user::setPhone);
-        ofNullable(request.email()).ifPresent(user::setEmail);
-        ofNullable(request.address()).ifPresent(user::setAddress);
-        return user;
-    }
-
     private UserDTO getUserInfo(User saved) {
-        return new UserDTO(saved.getId(), saved.getFirstName(), saved.getLastName(),
+        return new UserDTO(saved.getId(), saved.getUsername(), saved.getFirstName(), saved.getLastName(),
                 saved.getPhone(), saved.getEmail(), saved.getAddress());
     }
 }
