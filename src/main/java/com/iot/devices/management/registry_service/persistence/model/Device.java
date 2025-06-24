@@ -8,6 +8,8 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -50,10 +52,10 @@ public class Device {
     private String location;
 
     @Column(name = "latitude", length = 15)
-    private Double latitude;
+    private BigDecimal latitude;
 
     @Column(name = "longitude", length = 15)
-    private Double longitude;
+    private BigDecimal longitude;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id", nullable = false)
@@ -70,8 +72,8 @@ public class Device {
     @Column(name = "firmware_version", length = 50)
     private String firmwareVersion;
 
-    @Column(name = "firmware_version", length = 7)
-    private Double batteryLevel;
+    @Column(name = "battery_level", length = 7)
+    private BigDecimal batteryLevel;
 
     @Column(name = "created_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime createdAt;
