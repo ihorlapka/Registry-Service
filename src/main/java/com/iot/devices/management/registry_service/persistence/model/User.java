@@ -1,11 +1,14 @@
 package com.iot.devices.management.registry_service.persistence.model;
 
+import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import static jakarta.persistence.GenerationType.*;
@@ -58,5 +61,11 @@ public class User {
 
     @Column(name = "last_login_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime lastLoginAt;
+
+    @OneToMany(mappedBy = "owner",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY,
+            orphanRemoval = true)
+    private Set<Device> devices = new HashSet<>();
 
 }

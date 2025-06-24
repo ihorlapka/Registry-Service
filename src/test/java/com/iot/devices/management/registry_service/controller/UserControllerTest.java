@@ -2,7 +2,7 @@ package com.iot.devices.management.registry_service.controller;
 
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
-import com.iot.devices.management.registry_service.persistence.model.UserRole;
+import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,7 +65,8 @@ class UserControllerTest {
 
 
     UUID USER_ID = UUID.randomUUID();
-    User USER = new User(USER_ID, username, firstName, lastName, email, phone, address, passwrdHash, UserRole.USER, now(), now(), now());
+    User USER = new User(USER_ID, username, firstName, lastName, email, phone, address, passwrdHash,
+            UserRole.USER, now(), now(), now(), new HashSet<>());
 
     @Test
     void createUser() throws Exception {

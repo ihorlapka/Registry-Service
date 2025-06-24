@@ -3,7 +3,7 @@ package com.iot.devices.management.registry_service.persistence.services;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
-import com.iot.devices.management.registry_service.persistence.model.UserRole;
+import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import com.iot.devices.management.registry_service.persistence.repos.UsersRepository;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,7 +58,7 @@ public class UserService {
         UserRole userRole = ofNullable(request.userRole()).orElse(UserRole.USER);
         return new User(null, request.username(), request.firstName(), request.lastName(),
                 request.email(), request.phone(), request.address(), request.passwordHash(),
-                userRole, now(), now(), now());
+                userRole, now(), now(), now(), new HashSet<>());
     }
 
     private User patchUser(PatchUserRequest request, User user) {

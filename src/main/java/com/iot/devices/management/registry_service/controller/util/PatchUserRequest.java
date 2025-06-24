@@ -1,6 +1,6 @@
 package com.iot.devices.management.registry_service.controller.util;
 
-import com.iot.devices.management.registry_service.persistence.model.UserRole;
+import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Email;
 import lombok.NonNull;
