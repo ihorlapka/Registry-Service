@@ -64,7 +64,7 @@ public class User {
 
     @OneToMany(mappedBy = "owner",
             cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY,
+            fetch = FetchType.EAGER,
             orphanRemoval = true)
     private Set<Device> devices = new HashSet<>();
 

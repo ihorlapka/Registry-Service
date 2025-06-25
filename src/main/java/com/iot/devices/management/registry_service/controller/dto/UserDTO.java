@@ -1,5 +1,6 @@
-package com.iot.devices.management.registry_service.controller.util;
+package com.iot.devices.management.registry_service.controller.dto;
 
+import java.util.Set;
 import java.util.UUID;
 
 public record UserDTO(UUID id,
@@ -8,5 +9,6 @@ public record UserDTO(UUID id,
                       String lastName,
                       String phone,
                       String email,
-                      String address) {
+                      String address,
+                      Set<DeviceDTO> devices) {
 }
