@@ -1,4 +1,4 @@
-package com.iot.devices.management.registry_service.controller;
+package com.iot.devices.management.registry_service.controller.errors;
 
 import com.iot.devices.management.registry_service.controller.util.UserErrorResponse;
 import lombok.NonNull;
@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.iot.devices.management.registry_service.controller.errors.UserExceptions.*;
+import static com.iot.devices.management.registry_service.controller.errors.DeviceExceptions.*;
 import static java.util.Collections.emptyMap;
 import static org.springframework.http.HttpStatus.*;
 
@@ -40,6 +41,28 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
                 CONFLICT,
                 ex.getMessage(),
                 "Duplicate user!",
+                URI.create(request.getDescription(false)),
+                emptyMap());
+        return new ResponseEntity<>(response, CONFLICT);
+    }
+
+    @ExceptionHandler(DeviceNotFoundException.class)
+    public ResponseEntity<UserErrorResponse> handleDeviceNotFoundException(DeviceNotFoundException ex, WebRequest request) {
+        final UserErrorResponse response = UserErrorResponse.of(
+                NOT_FOUND,
+                ex.getMessage(),
+                "Unable to find device!",
+                URI.create(request.getDescription(false)),
+                emptyMap());
+        return new ResponseEntity<>(response, NOT_FOUND);
+    }
+
+    @ExceptionHandler(DuplicateDeviceException.class)
+    public ResponseEntity<UserErrorResponse> handleDuplicateDeviceException(DuplicateDeviceException ex, WebRequest request) {
+        final UserErrorResponse response = UserErrorResponse.of(
+                CONFLICT,
+                ex.getMessage(),
+                "Duplicate device!",
                 URI.create(request.getDescription(false)),
                 emptyMap());
         return new ResponseEntity<>(response, CONFLICT);

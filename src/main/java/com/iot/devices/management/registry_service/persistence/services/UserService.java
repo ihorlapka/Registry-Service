@@ -42,7 +42,7 @@ public class UserService {
         return usersRepository.save(patched);
     }
 
-    public Optional<User> findById(@NonNull UUID id) {
+    public Optional<User> findByUserId(@NonNull UUID id) {
         return usersRepository.findById(id);
     }
 

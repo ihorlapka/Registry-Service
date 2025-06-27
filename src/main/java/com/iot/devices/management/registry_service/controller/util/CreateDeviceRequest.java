@@ -30,7 +30,5 @@ public record CreateDeviceRequest(
         DeviceStatus status,
         OffsetDateTime lastActiveAt,
         String firmwareVersion,
-        BigDecimal batteryLevel,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt) {
+        BigDecimal batteryLevel) {
 }

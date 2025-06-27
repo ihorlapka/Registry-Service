@@ -1,9 +1,11 @@
 package com.iot.devices.management.registry_service.controller;
 
+import com.iot.devices.management.registry_service.controller.errors.ErrorHandler;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -47,7 +49,7 @@ class UserControllerTest {
     String phone = "+12345678";
     String email = "someemail@gmail.com";
     String address = "St. Privet";
-    String passwrdHash = "jwheknrmlear";
+    String passwordHash = "jwheknrmlear";
     String userRole = "USER";
 
     String json = """
@@ -61,12 +63,17 @@ class UserControllerTest {
               "passwordHash"  : "%s",
               "userRole"  : "%s"
             }
-            """.formatted(username, firstName, lastName, phone, email, address, passwrdHash, userRole);
+            """.formatted(username, firstName, lastName, phone, email, address, passwordHash, userRole);
 
 
     UUID USER_ID = UUID.randomUUID();
-    User USER = new User(USER_ID, username, firstName, lastName, email, phone, address, passwrdHash,
+    User USER = new User(USER_ID, username, firstName, lastName, email, phone, address, passwordHash,
             UserRole.USER, now(), now(), now(), new HashSet<>());
+
+    @AfterEach
+    void tearDown() {
+        verifyNoMoreInteractions(userService);
+    }
 
     @Test
     void createUser() throws Exception {
@@ -110,14 +117,14 @@ class UserControllerTest {
               "address"  : "%s"
             }
             """.formatted(USER_ID, patchedAddress);
-        when(userService.findById(USER_ID)).thenReturn(Optional.of(USER));
+        when(userService.findByUserId(USER_ID)).thenReturn(Optional.of(USER));
         USER.setAddress(patchedAddress);
         when(userService.patch(any(PatchUserRequest.class), any(User.class))).thenReturn(USER);
         mockMvc.perform(patch("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(patch))
                 .andExpect(status().isOk());
-        verify(userService).findById(USER_ID);
+        verify(userService).findByUserId(USER_ID);
         verify(userService).patch(any(PatchUserRequest.class), any(User.class));
         verifyNoMoreInteractions(userService);
     }
@@ -131,12 +138,12 @@ class UserControllerTest {
               "address"  : "%s"
             }
             """.formatted(USER_ID, patchedAddress);
-        when(userService.findById(USER_ID)).thenReturn(Optional.empty());
+        when(userService.findByUserId(USER_ID)).thenReturn(Optional.empty());
         mockMvc.perform(patch("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(patch))
                 .andExpect(status().isNotFound());
-        verify(userService).findById(USER_ID);
+        verify(userService).findByUserId(USER_ID);
         verifyNoMoreInteractions(userService);
     }
 
@@ -144,8 +151,7 @@ class UserControllerTest {
     void getAllUsers() throws Exception {
         when(userService.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(listOf(USER)));
         mockMvc.perform(get("/api/v1/users")
-                        .contentType(APPLICATION_JSON)
-                        .content(json))
+                        .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
         verify(userService).findAll(any(Pageable.class));
         verifyNoMoreInteractions(userService);
@@ -153,12 +159,11 @@ class UserControllerTest {
 
     @Test
     void getUserById() throws Exception {
-        when(userService.findById(any())).thenReturn(Optional.of(USER));
+        when(userService.findByUserId(any())).thenReturn(Optional.of(USER));
         mockMvc.perform(get("/api/v1/users/" + USER_ID)
-                        .contentType(APPLICATION_JSON)
-                        .content(json))
+                        .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
-        verify(userService).findById(any());
+        verify(userService).findByUserId(any());
         verifyNoMoreInteractions(userService);
     }
 
@@ -166,8 +171,7 @@ class UserControllerTest {
     void findByEmail() throws Exception {
         when(userService.findByEmail(email)).thenReturn(Optional.of(USER));
         mockMvc.perform(get("/api/v1/users/email/" + email)
-                        .contentType(APPLICATION_JSON)
-                        .content(json))
+                        .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
         verify(userService).findByEmail(any());
         verifyNoMoreInteractions(userService);
@@ -177,8 +181,7 @@ class UserControllerTest {
     void deleteUser() throws Exception {
         when(userService.removeById(any())).thenReturn(1);
         mockMvc.perform(delete("/api/v1/users/" + USER_ID)
-                        .contentType(APPLICATION_JSON)
-                        .content(json))
+                        .contentType(APPLICATION_JSON))
                 .andExpect(status().isNoContent());
         verify(userService).removeById(any());
         verifyNoMoreInteractions(userService);

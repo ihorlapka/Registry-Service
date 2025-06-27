@@ -47,7 +47,7 @@ public class UserController {
 
     @PatchMapping
     public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request) {
-        final Optional<User> user = userService.findById(request.id());
+        final Optional<User> user = userService.findByUserId(request.id());
         if (user.isEmpty()) {
             throw new UserNotFoundException(request.id());
         }
@@ -63,11 +63,11 @@ public class UserController {
         return ResponseEntity.ok(userDTOS);
     }
 
-    @GetMapping("{id}")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID id) {
-        final Optional<User> user = userService.findById(id);
+    @GetMapping("{userId}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID userId) {
+        final Optional<User> user = userService.findByUserId(userId);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     @GetMapping("email/{email}")
@@ -77,11 +77,11 @@ public class UserController {
                 .orElseThrow(() -> new UserNotFoundException(email));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
-        final int removedUser = userService.removeById(id);
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID userId) {
+        final int removedUser = userService.removeById(userId);
         if (removedUser < 1) {
-            throw new UserNotFoundException(id);
+            throw new UserNotFoundException(userId);
         }
         return ResponseEntity.noContent().build();
     }
