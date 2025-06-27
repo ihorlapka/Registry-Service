@@ -8,10 +8,12 @@ import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
@@ -58,11 +60,16 @@ public class DeviceController {
     }
 
     @GetMapping("{deviceId}")
+    @RateLimiter(name = "get_device_limiter", fallbackMethod = "rateLimitFallback")
     public ResponseEntity<DeviceDTO> getDevice(@PathVariable @NonNull UUID deviceId) {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
         return device.map(this::getDeviceInfo)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new DeviceNotFoundException(deviceId));
+    }
+
+    public ResponseEntity<DeviceDTO>  rateLimitFallback(UUID deviceId, Throwable t) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
     }
 
     @DeleteMapping("{deviceId}")
