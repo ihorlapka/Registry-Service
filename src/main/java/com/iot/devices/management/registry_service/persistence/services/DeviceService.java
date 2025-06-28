@@ -4,6 +4,7 @@ import com.iot.devices.management.registry_service.controller.util.CreateDeviceR
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.enums.DeviceStatus;
 import com.iot.devices.management.registry_service.persistence.repos.DevicesRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -52,6 +53,10 @@ public class DeviceService {
     public Device patch(@Valid PatchDeviceRequest request, @NonNull Device device, @Nullable User user) {
         Device patched =  patchDevice(request, device, user);
         return devicesRepository.save(patched);
+    }
+
+    public int patch(String data) {
+        return devicesRepository.updateDeviceStatus(UUID.fromString("id"), DeviceStatus.ONLINE); //TODO: finish!
     }
 
     private Device patchDevice(PatchDeviceRequest request, Device device, User user) {

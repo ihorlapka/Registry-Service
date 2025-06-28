@@ -39,9 +39,31 @@ management:
     web:
       exposure:
         include: "*"
-resilience4j.ratelimiter:
-  instances:
-    get_device_limiter:
-      limitForPeriod: 1000       # Max calls per period
-      limitRefreshPeriod: 1s     # Period
-      timeoutDuration: 0
+resilience4j:
+  ratelimiter:
+    instances:
+      get_device_limiter:
+        limitForPeriod: 1000       # Max calls per period
+        limitRefreshPeriod: 1s     # Period
+        timeoutDuration: 0
+  retry:
+    instances:
+      updateDeviceRetry:
+        maxAttempts: 3
+        waitDuration: 100ms
+        retryExceptions:
+          - org.springframework.dao.ConcurrencyFailureException
+          - org.springframework.dao.TransientDataAccessException
+          - java.sql.SQLTransientException
+kafka:
+  consumer:
+    topic: iot-devices-data
+    poll-timeout-ms: 2000
+    properties:
+      bootstrap-server: localhost:9092
+      group.id: my-consumer-group
+      key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto.offset.reset: earliest
+parallel-persister:
+  threads-amount: 10
