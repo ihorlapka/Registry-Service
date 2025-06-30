@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -17,6 +18,7 @@ import static com.iot.devices.management.registry_service.kafka.properties.Kafka
 @Slf4j
 @Getter
 @Setter
+@ToString
 @Configuration
 @ConfigurationProperties(PROPERTIES_PREFIX)
 @RequiredArgsConstructor
@@ -29,12 +31,17 @@ public class KafkaConsumerProperties {
     @Value("${" + PROPERTIES_PREFIX + ".topic}")
     private String topic;
 
-
     @Value("${" + PROPERTIES_PREFIX + ".poll-timeout-ms}")
     private Long pollTimeoutMs;
 
+    @Value("${" + PROPERTIES_PREFIX + ".restart-timeout-ms}")
+    private Long restartTimeoutMs;
+
+    @Value("${" + PROPERTIES_PREFIX + ".executor-termination-timeout-ms}")
+    private Long executorTerminationTimeoutMs;
+
     @PostConstruct
     private void logProperties() {
-        log.info("kafka consumer properties: {}", properties);
+        log.info("kafka consumer properties: {}", this);
     }
 }

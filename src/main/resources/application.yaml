@@ -48,22 +48,29 @@ resilience4j:
         timeoutDuration: 0
   retry:
     instances:
-      updateDeviceRetry:
-        maxAttempts: 3
-        waitDuration: 100ms
+      patchDeviceRetry:
+        maxAttempts: 5
+        waitDuration: 500ms
         retryExceptions:
-          - org.springframework.dao.ConcurrencyFailureException
           - org.springframework.dao.TransientDataAccessException
           - java.sql.SQLTransientException
+          - java.sql.SQLRecoverableException
 kafka:
   consumer:
     topic: iot-devices-data
     poll-timeout-ms: 2000
+    restart-timeout-ms: 10000
+    executor-termination-timeout-ms: 5000
     properties:
       bootstrap-server: localhost:9092
-      group.id: my-consumer-group
+      group.id: iot-devices-telemetry
       key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto.offset.reset: earliest
+      enable.auto.commit: false
+      max.poll.records: 500
+      max.poll.interval: 300000
+      fetch.min.bytes: 1
+      fetch.max.wait.ms: 5000
 parallel-persister:
   threads-amount: 10
