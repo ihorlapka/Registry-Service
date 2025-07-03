@@ -59,14 +59,14 @@ kafka:
   consumer:
     topic: iot-devices-data
     poll-timeout-ms: 2000
-    restart-timeout-ms: 10000
+    restart-timeout-ms: 1000
     executor-termination-timeout-ms: 5000
     properties:
       bootstrap.server: localhost:9092
       group.id: iot-devices-telemetry
       key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
-      schema.registry.url: http://localhost:8081
+      schema.registry.url: mock://my-scope:8081
       specific.avro.reader: true
       auto.offset.reset: earliest
       enable.auto.commit: false
@@ -74,5 +74,12 @@ kafka:
       max.poll.interval: 300000
       fetch.min.bytes: 1
       fetch.max.wait.ms: 5000
+  producer:
+    topic: iot-devices-data
+    properties:
+      bootstrap.servers: localhost:9092
+      key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      schema.registry.url: mock://my-scope:8081
 parallel-persister:
   threads-amount: 10

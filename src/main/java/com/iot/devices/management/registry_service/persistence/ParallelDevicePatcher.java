@@ -1,9 +1,11 @@
 package com.iot.devices.management.registry_service.persistence;
 
+import com.iot.devices.DoorSensor;
 import com.iot.devices.management.registry_service.kafka.DeadLetterProducer;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -17,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+
+import static com.iot.devices.management.registry_service.mapping.DeviceParametersMapper.*;
 
 @Slf4j
 @Component
@@ -36,12 +40,12 @@ public class ParallelDevicePatcher {
     }
 
 
-    public Map<TopicPartition, OffsetAndMetadata> patch(Map<String, ConsumerRecord<String, String>> recordById) {
+    public Map<TopicPartition, OffsetAndMetadata> patch(Map<String, ConsumerRecord<String, SpecificRecord>> recordById) {
         final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new ConcurrentHashMap<>();
         final List<CompletableFuture<Void>> futures = new ArrayList<>(recordById.size());
-        for (Map.Entry<String, ConsumerRecord<String, String>> entry : recordById.entrySet()) {
+        for (Map.Entry<String, ConsumerRecord<String, SpecificRecord>> entry : recordById.entrySet()) {
             futures.add(CompletableFuture.runAsync(() -> {
-                final ConsumerRecord<String, String> record = entry.getValue();
+                final ConsumerRecord<String, SpecificRecord> record = entry.getValue();
                 try {
                     persistWithRetries(record);
                     offsetsToCommit.put(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1));
@@ -70,8 +74,8 @@ public class ParallelDevicePatcher {
     }
 
     @Retry(name = "patchDeviceRetry", fallbackMethod = "updateFallback")
-    private void persistWithRetries(ConsumerRecord<String, String> record) {
-        final int updated = deviceService.patch(record.value());
+    private void persistWithRetries(ConsumerRecord<String, SpecificRecord> record) {
+        final int updated = patchTelemetry(record.value());
         switch (updated) {
             case 0 -> log.warn("No device was updated by id={}, offset={}", record.value(), record.offset());
             case 1 -> log.debug("Device with id={} is updated", record.value());
@@ -79,7 +83,14 @@ public class ParallelDevicePatcher {
         }
     }
 
-    public void updateFallback(ConsumerRecord<String, String> record, Throwable t) {
+    private int patchTelemetry(SpecificRecord record) {
+        return switch (record) {
+            case DoorSensor ds -> deviceService.patchDoorSensorTelemetry(mapDoorSensor(ds));
+            default -> throw new IllegalArgumentException("Unknown device type detected");
+        };
+    }
+
+    public void updateFallback(ConsumerRecord<String, SpecificRecord> record, Throwable t) {
         log.error("Retry failed for: {}", record, t);
         throw new RuntimeException("Update failed after retries!");
     }

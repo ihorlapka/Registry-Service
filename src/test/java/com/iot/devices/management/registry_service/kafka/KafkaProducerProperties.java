@@ -1,4 +1,4 @@
-package com.iot.devices.management.registry_service.kafka.properties;
+package com.iot.devices.management.registry_service.kafka;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -13,35 +13,25 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.iot.devices.management.registry_service.kafka.properties.KafkaConsumerProperties.PROPERTIES_PREFIX;
 
 @Slf4j
 @Getter
 @Setter
 @ToString
 @Configuration
-@ConfigurationProperties(PROPERTIES_PREFIX)
+@ConfigurationProperties(KafkaProducerProperties.PROPERTIES_PREFIX)
 @RequiredArgsConstructor
-public class KafkaConsumerProperties {
+public class KafkaProducerProperties {
 
-    final static String PROPERTIES_PREFIX = "kafka.consumer";
+    final static String PROPERTIES_PREFIX = "kafka.producer";
 
     private Map<String, String> properties = new HashMap<>();
 
     @Value("${" + PROPERTIES_PREFIX + ".topic}")
     private String topic;
 
-    @Value("${" + PROPERTIES_PREFIX + ".poll-timeout-ms}")
-    private Long pollTimeoutMs;
-
-    @Value("${" + PROPERTIES_PREFIX + ".restart-timeout-ms}")
-    private Long restartTimeoutMs;
-
-    @Value("${" + PROPERTIES_PREFIX + ".executor-termination-timeout-ms}")
-    private Long executorTerminationTimeoutMs;
-
     @PostConstruct
     private void logProperties() {
-        log.info("kafka consumer properties: {}", this);
+        log.info("kafka producer properties: {}", this);
     }
 }

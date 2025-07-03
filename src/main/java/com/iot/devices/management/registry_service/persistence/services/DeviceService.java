@@ -2,9 +2,9 @@ package com.iot.devices.management.registry_service.persistence.services;
 
 import com.iot.devices.management.registry_service.controller.util.CreateDeviceRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
+import com.iot.devices.management.registry_service.mapping.DoorSensorTelemetry;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
-import com.iot.devices.management.registry_service.persistence.model.enums.DeviceStatus;
 import com.iot.devices.management.registry_service.persistence.repos.DevicesRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -13,9 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.iot.devices.management.registry_service.persistence.model.enums.DeviceStatus.ONLINE;
 import static java.time.OffsetDateTime.now;
 import static java.util.Optional.ofNullable;
 
@@ -55,8 +57,10 @@ public class DeviceService {
         return devicesRepository.save(patched);
     }
 
-    public int patch(String data) {
-        return devicesRepository.updateDeviceStatus(UUID.fromString("id"), DeviceStatus.ONLINE); //TODO: finish!
+    public int patchDoorSensorTelemetry(DoorSensorTelemetry ds) {
+        final OffsetDateTime lastActiveAt = ds.getStatus().equals(ONLINE.name()) ? ds.getLastUpdated() : null;
+        return devicesRepository.updateDoorSensorTelemetry(ds.getId(), ds.getStatus(), lastActiveAt, ds.getFirmwareVersion(),
+                ds.getBatteryLevel(), ds.getLastUpdated(), ds.getDoorState(), ds.getTamperAlert(), ds.getLastOpened());
     }
 
     private Device patchDevice(PatchDeviceRequest request, Device device, User user) {

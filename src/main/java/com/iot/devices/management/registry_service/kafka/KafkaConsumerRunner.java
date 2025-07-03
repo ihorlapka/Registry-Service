@@ -6,9 +6,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -32,7 +34,7 @@ public class KafkaConsumerRunner {
     private final ParallelDevicePatcher parallelDevicePatcher;
     private final KafkaConsumerProperties consumerProperties;
 
-    private KafkaConsumer<String, String> kafkaConsumer;
+    private KafkaConsumer<String, SpecificRecord> kafkaConsumer;
 
 
     @PostConstruct
@@ -44,12 +46,14 @@ public class KafkaConsumerRunner {
         while (!isShutdown) {
             try {
                 subscribe();
-                final ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.of(consumerProperties.getPollTimeoutMs(), MILLIS));
-                final Map<String, ConsumerRecord<String, String>> filteredRecordById = filterDeprecatedRecords(records);
+                final ConsumerRecords<String, SpecificRecord> records = kafkaConsumer.poll(Duration.of(consumerProperties.getPollTimeoutMs(), MILLIS));
+                final Map<String, ConsumerRecord<String, SpecificRecord>> filteredRecordById = filterDeprecatedRecords(records);
                 final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = parallelDevicePatcher.patch(filteredRecordById);
                 if (!offsetsToCommit.isEmpty()) {
                     kafkaConsumer.commitAsync(offsetsToCommit, getOffsetCommitCallback());
                 }
+            } catch (WakeupException e) {
+                log.info("Consumer poll woken up");
             } catch (Exception e) {
                 log.error("Unexpected exception in consumer loop ", e);
             } finally {
@@ -60,7 +64,9 @@ public class KafkaConsumerRunner {
     }
 
     private void subscribe() {
-        kafkaConsumer = new KafkaConsumer<>(consumerProperties.getProperties());
+        Properties properties = new Properties(consumerProperties.getProperties().size());
+        properties.putAll(consumerProperties.getProperties());
+        kafkaConsumer = new KafkaConsumer<>(properties);
         kafkaConsumer.subscribe(List.of(consumerProperties.getTopic()), new ConsumerRebalanceListener() {
             @Override
             public void onPartitionsRevoked(Collection<TopicPartition> collection) {
@@ -76,14 +82,13 @@ public class KafkaConsumerRunner {
         });
     }
 
-    private Map<String, ConsumerRecord<String, String>> filterDeprecatedRecords(ConsumerRecords<String, String> records) {
-        final Map<String, ConsumerRecord<String, String>> filteredRecords = new ConcurrentHashMap<>();
-        for (ConsumerRecord<String, String> record : records) {
+    private Map<String, ConsumerRecord<String, SpecificRecord>> filterDeprecatedRecords(ConsumerRecords<String, SpecificRecord> records) {
+        final Map<String, ConsumerRecord<String, SpecificRecord>> filteredRecords = new ConcurrentHashMap<>();
+        for (ConsumerRecord<String, SpecificRecord> record : records) {
             filteredRecords.compute(record.key(), (k, v) -> {
                 if (v == null) {
                     return record;
-                }
-                else if (record.timestamp() > v.timestamp()) {
+                } else if (record.timestamp() > v.timestamp()) {
                     log.debug("Current record is filtered as deprecated: {}", v.value());
                     return record;
                 }
@@ -97,9 +102,9 @@ public class KafkaConsumerRunner {
     private OffsetCommitCallback getOffsetCommitCallback() {
         return (committedOffsets, ex) -> {
             if (ex == null) {
-                System.out.println("Async commit successful for offsets: " + committedOffsets);
+                log.info("Async commit successful for offsets: {}", committedOffsets);
             } else {
-                System.err.println("Async commit failed for offsets: " + committedOffsets + ". Error: " + ex.getMessage());
+                log.error("Async commit failed for offsets: {}. Error: {}", committedOffsets, ex.getMessage());
                 if (ex instanceof KafkaException) {
                     System.err.println("Kafka commit error: " + ex.getMessage());
                 }
@@ -109,9 +114,11 @@ public class KafkaConsumerRunner {
 
     private void closeConsumer() {
         try {
-            log.warn("Closing kafka consumer");
-            kafkaConsumer.close();
-            log.info("Kafka consumer is closed");
+            if (kafkaConsumer != null) {
+                log.warn("Closing kafka consumer");
+                kafkaConsumer.close();
+                log.info("Kafka consumer is closed");
+            }
             if (!isShutdown) {
                 log.info("Waiting {} ms before consumer restart", consumerProperties.getRestartTimeoutMs());
                 Thread.sleep(consumerProperties.getRestartTimeoutMs());
