@@ -71,12 +71,12 @@ public class Device {
     @Column(name = "firmware_version", length = 50)
     private String firmwareVersion;
 
-    @Column(name = "battery_level", length = 7)
-    private BigDecimal batteryLevel;
-
     @Column(name = "created_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt;
+
+    @Column(columnDefinition = "jsonb")
+    private String telemetry;
 }

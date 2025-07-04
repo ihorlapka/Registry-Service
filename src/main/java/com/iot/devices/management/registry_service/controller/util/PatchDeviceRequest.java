@@ -21,7 +21,6 @@ public record PatchDeviceRequest(
         @Nullable DeviceStatus status,
         @Nullable OffsetDateTime lastActiveAt,
         @Nullable String firmwareVersion,
-        @Nullable BigDecimal batteryLevel,
         @Nullable OffsetDateTime updatedAt
 ) {
 }

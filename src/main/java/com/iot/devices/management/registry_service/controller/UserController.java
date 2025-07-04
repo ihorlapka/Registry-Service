@@ -99,12 +99,13 @@ public class UserController {
     }
 
     private static Set<DeviceDTO> mapDevices(User saved) {
-        return saved.getDevices().stream().map(device -> new DeviceDTO(device.getId(),
-                device.getName(), device.getSerialNumber(),
-                device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
-                device.getLocation(), device.getLatitude(), device.getLongitude(),
-                device.getOwner().getId(), device.getStatus(), device.getLastActiveAt(),
-                device.getFirmwareVersion(), device.getBatteryLevel(),
-                device.getCreatedAt(), device.getUpdatedAt())).collect(toSet());
+        return saved.getDevices().stream()
+                .map(device -> new DeviceDTO(device.getId(),
+                        device.getName(), device.getSerialNumber(),
+                        device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
+                        device.getLocation(), device.getLatitude(), device.getLongitude(),
+                        device.getOwner().getId(), device.getStatus(), device.getLastActiveAt(),
+                        device.getFirmwareVersion(), device.getCreatedAt(), device.getUpdatedAt()))
+                .collect(toSet());
     }
 }

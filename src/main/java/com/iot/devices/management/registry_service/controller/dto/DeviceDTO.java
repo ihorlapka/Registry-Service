@@ -22,7 +22,6 @@ public record DeviceDTO(
         DeviceStatus status,
         OffsetDateTime lastActiveAt,
         String firmwareVersion,
-        BigDecimal batteryLevel,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {

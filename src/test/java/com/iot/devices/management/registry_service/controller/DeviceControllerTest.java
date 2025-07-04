@@ -60,7 +60,6 @@ class DeviceControllerTest {
     String status = "ONLINE";
     String lastActiveAt = "2025-06-25T19:42:00+03:00";
     String firmwareVersion = "v2.1.0";
-    Double batteryLevel = 87.50;
 
     String json = """
             {
@@ -75,14 +74,13 @@ class DeviceControllerTest {
               "ownerId": "%s",
               "status": "%s",
               "lastActiveAt": "%s",
-              "firmwareVersion": "%s",
-              "batteryLevel": "%s"
+              "firmwareVersion": "%s"
             }
             """;
 
     String filledJson = json.formatted(name, serialNumber, manufacturer,
             model, deviceType, location, latitude, longitude, ownerId,
-            status, lastActiveAt, firmwareVersion, batteryLevel);
+            status, lastActiveAt, firmwareVersion);
 
     User USER = new User(UUID.fromString("9369f52f-e0d4-4695-a8f2-bd1eb77a221f"),
             "username", "firstName", "lastName",
@@ -92,8 +90,7 @@ class DeviceControllerTest {
     Device DEVICE = new Device(UUID.randomUUID(), name, serialNumber,
             DeviceManufacturer.valueOf(manufacturer), model, DeviceType.valueOf(deviceType),
             location, new BigDecimal(latitude), new BigDecimal(longitude), USER,
-            DeviceStatus.valueOf(status), now(), firmwareVersion,
-            new BigDecimal(batteryLevel), now(), now());
+            DeviceStatus.valueOf(status), now(), firmwareVersion, now(), now(), "{}");
 
     @AfterEach
     void tearDown() {
@@ -145,11 +142,10 @@ class DeviceControllerTest {
                   "deviceType": "%s",
                   "status": "%s",
                   "lastActiveAt": "%s",
-                  "firmwareVersion": "%s",
-                  "batteryLevel": "%s"
+                  "firmwareVersion": "%s"
                 }
                 """.formatted(name, serialNumber, manufacturer, model, deviceType,
-                status, lastActiveAt, firmwareVersion, batteryLevel);
+                status, lastActiveAt, firmwareVersion);
         Device device = DEVICE;
         device.setOwner(null);
         when(deviceService.save(any(CreateDeviceRequest.class), isNull())).thenReturn(device);
@@ -164,16 +160,16 @@ class DeviceControllerTest {
 
     @Test
     void patchDevice() throws Exception {
-        double updatedBatteryLevel = 58.5;
+        String firmwareVersion = "1.58.5v";
         String filledJson = """
                 {
                   "id": "%s",
-                  "batteryLevel": "%s"
+                  "firmwareVersion": "%s"
                 }
-                """.formatted(DEVICE.getId(), updatedBatteryLevel);
+                """.formatted(DEVICE.getId(), firmwareVersion);
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
         Device patchedDevice = DEVICE;
-        patchedDevice.setBatteryLevel(BigDecimal.valueOf(updatedBatteryLevel));
+        patchedDevice.setFirmwareVersion(firmwareVersion);
         when(deviceService.patch(any(PatchDeviceRequest.class), eq(DEVICE), isNull())).thenReturn(patchedDevice);
         mockMvc.perform(patch("/api/v1/devices")
                         .contentType(APPLICATION_JSON)

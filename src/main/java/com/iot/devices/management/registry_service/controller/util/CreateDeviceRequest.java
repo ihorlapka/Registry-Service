@@ -29,6 +29,5 @@ public record CreateDeviceRequest(
         @NonNull
         DeviceStatus status,
         OffsetDateTime lastActiveAt,
-        String firmwareVersion,
-        BigDecimal batteryLevel) {
+        String firmwareVersion) {
 }

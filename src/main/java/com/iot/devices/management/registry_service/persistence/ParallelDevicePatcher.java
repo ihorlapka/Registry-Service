@@ -1,6 +1,6 @@
 package com.iot.devices.management.registry_service.persistence;
 
-import com.iot.devices.DoorSensor;
+import com.iot.devices.*;
 import com.iot.devices.management.registry_service.kafka.DeadLetterProducer;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -32,7 +32,7 @@ public class ParallelDevicePatcher {
     private final DeviceService deviceService;
     private final DeadLetterProducer deadLetterProducer;
 
-    public ParallelDevicePatcher(@Value("${" + PROPERTIES_PREFIX + "threads-amount}") int threadsAmount,
+    public ParallelDevicePatcher(@Value("${" + PROPERTIES_PREFIX + ".threads-amount}") int threadsAmount,
                                  DeviceService deviceService, DeadLetterProducer deadLetterProducer) {
         this.executorService = Executors.newFixedThreadPool(threadsAmount);
         this.deviceService = deviceService;
@@ -86,6 +86,12 @@ public class ParallelDevicePatcher {
     private int patchTelemetry(SpecificRecord record) {
         return switch (record) {
             case DoorSensor ds -> deviceService.patchDoorSensorTelemetry(mapDoorSensor(ds));
+            case EnergyMeter em -> deviceService.patchEnergyMeterTelemetry(mapEnergyMeter(em));
+            case SmartLight sl -> deviceService.patchSmartLightTelemetry(mapSmartLight(sl));
+            case SmartPlug sp -> deviceService.patchSmartPlugTelemetry(mapSmartPlug(sp));
+            case SoilMoistureSensor sms -> deviceService.patchSoilMoistureSensorTelemetry(mapSoilMoisture(sms));
+            case TemperatureSensor ts -> deviceService.patchTemperatureSensorTelemetry(mapTemperatureSensor(ts));
+            case Thermostat t -> deviceService.patchThermostatTelemetry(mapThermostat(t));
             default -> throw new IllegalArgumentException("Unknown device type detected");
         };
     }

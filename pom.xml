@@ -134,13 +134,6 @@
 			<artifactId>kafka-avro-serializer</artifactId>
 			<version>7.9.2</version>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>io.confluent</groupId>-->
-<!--			<artifactId>kafka-schema-registry</artifactId>-->
-<!--			<version>7.6.0</version>-->
-<!--			<scope>test</scope>-->
-<!--		</dependency>-->
-
 	</dependencies>
 
 	<build>
