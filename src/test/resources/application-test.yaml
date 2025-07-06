@@ -83,3 +83,7 @@ kafka:
       schema.registry.url: mock://my-scope:8081
 parallel-persister:
   threads-amount: 10
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

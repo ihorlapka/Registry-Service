@@ -1,6 +1,7 @@
 server:
   servlet:
     context-path: /iot-registry
+  port: 8080
 spring:
   application:
     name: registry-service
@@ -62,7 +63,7 @@ kafka:
     restart-timeout-ms: 10000
     executor-termination-timeout-ms: 5000
     properties:
-      bootstrap.server: localhost:9092
+      bootstrap.servers: localhost:9092
       group.id: iot-devices-telemetry
       key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
@@ -74,5 +75,6 @@ kafka:
       max.poll.interval: 300000
       fetch.min.bytes: 1
       fetch.max.wait.ms: 5000
+      value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
 parallel-persister:
   threads-amount: 10

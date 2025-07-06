@@ -30,6 +30,7 @@ public class KafkaConsumerRunner {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Collection<TopicPartition> partitions = new ArrayList<>();
     private volatile boolean isShutdown = false;
+    private volatile boolean isSubscribed = false;
 
     private final ParallelDevicePatcher parallelDevicePatcher;
     private final KafkaConsumerProperties consumerProperties;
@@ -45,7 +46,9 @@ public class KafkaConsumerRunner {
     private void runConsumer() {
         while (!isShutdown) {
             try {
-                subscribe();
+                if (!isSubscribed) {
+                    subscribe();
+                }
                 final ConsumerRecords<String, SpecificRecord> records = kafkaConsumer.poll(Duration.of(consumerProperties.getPollTimeoutMs(), MILLIS));
                 final Map<String, ConsumerRecord<String, SpecificRecord>> filteredRecordById = filterDeprecatedRecords(records);
                 final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = parallelDevicePatcher.patch(filteredRecordById);
@@ -56,15 +59,15 @@ public class KafkaConsumerRunner {
                 log.info("Consumer poll woken up");
             } catch (Exception e) {
                 log.error("Unexpected exception in consumer loop ", e);
-            } finally {
                 closeConsumer();
             }
         }
         log.info("Exited kafka consumer loop");
+        closeConsumer();
     }
 
     private void subscribe() {
-        Properties properties = new Properties(consumerProperties.getProperties().size());
+        final Properties properties = new Properties(consumerProperties.getProperties().size());
         properties.putAll(consumerProperties.getProperties());
         kafkaConsumer = new KafkaConsumer<>(properties);
         kafkaConsumer.subscribe(List.of(consumerProperties.getTopic()), new ConsumerRebalanceListener() {
@@ -72,12 +75,14 @@ public class KafkaConsumerRunner {
             public void onPartitionsRevoked(Collection<TopicPartition> collection) {
                 log.info("Partitions revoked");
                 partitions.clear();
+                isSubscribed = false;
             }
 
             @Override
             public void onPartitionsAssigned(Collection<TopicPartition> collection) {
                 log.info("Partitions assigned: {}", collection);
                 partitions.addAll(collection);
+                isSubscribed = true;
             }
         });
     }
@@ -118,6 +123,7 @@ public class KafkaConsumerRunner {
                 log.warn("Closing kafka consumer");
                 kafkaConsumer.close();
                 log.info("Kafka consumer is closed");
+                isSubscribed = false;
             }
             if (!isShutdown) {
                 log.info("Waiting {} ms before consumer restart", consumerProperties.getRestartTimeoutMs());
@@ -135,9 +141,9 @@ public class KafkaConsumerRunner {
         executorService.shutdown();
         if (!executorService.awaitTermination(consumerProperties.getExecutorTerminationTimeoutMs(), MILLISECONDS)) {
             executorService.shutdownNow();
-            System.out.println("Kafka consumer executor shutdown forced");
+            log.info("Kafka consumer executor shutdown forced");
         } else {
-            System.out.println("Kafka consumer executor shutdown gracefully");
+            log.info("Kafka consumer executor shutdown gracefully");
         }
     }
 }

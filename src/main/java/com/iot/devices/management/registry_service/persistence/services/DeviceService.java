@@ -82,26 +82,32 @@ public class DeviceService {
     }
 
     public int patchEnergyMeterTelemetry(EnergyMeterTelemetry em) {
-        return 0;
+        return devicesRepository.updateEnergyMeterTelemetry(em.getId(), em.getStatus(), em.getFirmwareVersion(), em.getLastUpdated(),
+                em.getVoltage(), em.getCurrent(), em.getPower(), em.getEnergyConsumed());
     }
 
     public int patchSmartLightTelemetry(SmartLightTelemetry sl) {
-        return 0;
+        return devicesRepository.updateSmartLightTelemetry(sl.getId(), sl.getStatus(), sl.getFirmwareVersion(), sl.getLastUpdated(),
+                sl.getIsOn(), sl.getBrightness(), sl.getColour(), sl.getMode(), sl.getPowerConsumption());
     }
 
     public int patchSmartPlugTelemetry(SmartPlugTelemetry sp) {
-        return 0;
+        return devicesRepository.updateSmartPlugTelemetry(sp.getId(), sp.getStatus(), sp.getFirmwareVersion(), sp.getLastUpdated(),
+                sp.getIsOn(), sp.getVoltage(), sp.getCurrent(), sp.getPowerUsage());
     }
 
     public int patchSoilMoistureSensorTelemetry(SoilMoistureSensorTelemetry sms) {
-        return 0;
+        return devicesRepository.updateSoilMoistureSensorTelemetry(sms.getId(), sms.getStatus(), sms.getFirmwareVersion(),
+                sms.getLastUpdated(), sms.getMoisturePercentage(), sms.getSoilTemperature(), sms.getBatteryLevel());
     }
 
     public int patchTemperatureSensorTelemetry(TemperatureSensorTelemetry ts) {
-        return 0;
+        return devicesRepository.updateTemperatureSensorTelemetry(ts.getId(), ts.getStatus(), getLastActiveAt(ts.getStatus(), ts.getLastUpdated()),
+                ts.getFirmwareVersion(), ts.getLastUpdated(), ts.getTemperature(), ts.getHumidity(), ts.getPressure(), ts.getUnit());
     }
 
     public int patchThermostatTelemetry(ThermostatTelemetry t) {
-        return 0;
+        return devicesRepository.updateThermostatTelemetry(t.getId(), t.getStatus(), t.getFirmwareVersion(), t.getLastUpdated(),
+                t.getCurrentTemperature(), t.getTargetTemperature(), t.getHumidity(), t.getMode());
     }
 }

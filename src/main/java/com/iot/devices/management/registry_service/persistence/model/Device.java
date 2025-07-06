@@ -18,7 +18,7 @@ import static jakarta.persistence.GenerationType.AUTO;
 @Setter
 @Entity
 @Table(name = "devices")
-@ToString
+@ToString(exclude = "owner")
 @NoArgsConstructor
 @AllArgsConstructor
 public class Device {
@@ -77,6 +77,7 @@ public class Device {
     @Column(name = "updated_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt;
 
-    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "telemetry", columnDefinition = "jsonb")
     private String telemetry;
 }

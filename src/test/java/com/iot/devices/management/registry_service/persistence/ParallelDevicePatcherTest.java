@@ -1,5 +1,7 @@
 package com.iot.devices.management.registry_service.persistence;
 
+import com.iot.devices.TempUnit;
+import com.iot.devices.TemperatureSensor;
 import com.iot.devices.management.registry_service.kafka.DeadLetterProducer;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
@@ -10,6 +12,7 @@ import com.iot.devices.management.registry_service.persistence.model.enums.UserR
 import com.iot.devices.management.registry_service.persistence.repos.DevicesRepository;
 import com.iot.devices.management.registry_service.persistence.repos.UsersRepository;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -38,8 +41,10 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static java.time.OffsetDateTime.now;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
+@Slf4j
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
 @DataJpaTest
@@ -83,47 +88,64 @@ class ParallelDevicePatcherTest {
         postgreSQLContainer.close();
     }
 
-    String username = "jonndoe123";
-    String firstName = "John";
-    String lastName = "Doe";
-    String phone = "+12345678";
-    String email = "someemail@gmail.com";
-    String address = "St. Privet";
-    String passwordHash = "jwheknrmlear";
-
-    String name = "Living Room Temperature Sensor";
-    String serialNumber = "SN-8754-XYZ";
-    String manufacturer = "BOSCH";
-    String model = "BME280";
-    String deviceType = "TEMPERATURE_SENSOR";
-    String location = "Living Room";
-    Double latitude = 50.450100;
-    Double longitude = 30.523400;
-    String status = "ONLINE";
-    String firmwareVersion = "v2.1.0";
-
-    UUID USER_ID = UUID.randomUUID();
-
-
-    User USER = new User(USER_ID, username, firstName, lastName, email, phone, address, passwordHash,
-            UserRole.USER, now(), now(), now(), ImmutableSet.of());
-
-    Device DEVICE = new Device(UUID.randomUUID(), name, serialNumber,
-            DeviceManufacturer.valueOf(manufacturer), model, DeviceType.valueOf(deviceType),
-            location, new BigDecimal(latitude), new BigDecimal(longitude), USER,
-            DeviceStatus.valueOf(status), now(), firmwareVersion, now(), now(), null);
-
     @BeforeEach
     void setUp() {
+        String username = "jonndoe123";
+        String firstName = "John";
+        String lastName = "Doe";
+        String phone = "+12345678";
+        String email = "someemail@gmail.com";
+        String address = "St. Privet";
+        String passwordHash = "jwheknrmlear";
+
+        String name = "Living Room Temperature Sensor";
+        String serialNumber = "SN-8754-XYZ";
+        String manufacturer = "BOSCH";
+        String model = "BME280";
+        String deviceType = "TEMPERATURE_SENSOR";
+        String location = "Living Room";
+        double latitude = 50.450100;
+        double longitude = 30.523400;
+        String status = "OFFLINE";
+        String firmwareVersion = "v2.1.0";
+
+        Device DEVICE = new Device(null, name, serialNumber,
+                DeviceManufacturer.valueOf(manufacturer), model, DeviceType.valueOf(deviceType),
+                location, new BigDecimal(latitude), new BigDecimal(longitude), null,
+                DeviceStatus.valueOf(status), now(), firmwareVersion, now(), now(), null);
+
+        User USER = new User(null, username, firstName, lastName, email, phone, address, passwordHash,
+                UserRole.USER, now(), now(), now(), ImmutableSet.of(DEVICE));
+        DEVICE.setOwner(USER);
+
         usersRepository.save(USER);
-        devicesRepository.save(DEVICE);
     }
 
     @Test
     void test() {
         List<User> all = usersRepository.findAll();
+        User user = all.getFirst();
+        Optional<Device> optionalDevice = user.getDevices().stream().findFirst();
+        assertTrue(optionalDevice.isPresent());
+        Device device = optionalDevice.get();
+
         Map<String, ConsumerRecord<String, SpecificRecord>> records = new HashMap<>();
+        TemperatureSensor temperatureSensorUpdate1 = TemperatureSensor.newBuilder()
+                .setDeviceId(device.getId().toString())
+                .setTemperature(23f)
+                .setUnit(TempUnit.C)
+                .setStatus(com.iot.devices.DeviceStatus.ONLINE)
+                .setLastUpdated(now().toInstant())
+                .build();
+        records.put(device.getId().toString(), new ConsumerRecord<>("some-topic", 1, 1L, device.getId().toString(), temperatureSensorUpdate1));
+
+        log.info("Updating device...");
         Map<TopicPartition, OffsetAndMetadata> offsets = parallelDevicePatcher.patch(records);
+
+        Optional<Device> updatedDeviceOptional = devicesRepository.findById(device.getId());
+        assertTrue(updatedDeviceOptional.isPresent());
+        Device updatedDevice = updatedDeviceOptional.get();
+
     }
 
     @Configuration

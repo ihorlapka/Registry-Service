@@ -12,6 +12,9 @@ import org.apache.kafka.common.TopicPartition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLRecoverableException;
 import java.sql.SQLTransientException;
@@ -73,8 +76,9 @@ public class ParallelDevicePatcher {
                 || e instanceof TransientDataAccessException; //TODO: maybe there are more retriable exceptions
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
     @Retry(name = "patchDeviceRetry", fallbackMethod = "updateFallback")
-    private void persistWithRetries(ConsumerRecord<String, SpecificRecord> record) {
+    public void persistWithRetries(ConsumerRecord<String, SpecificRecord> record) {
         final int updated = patchTelemetry(record.value());
         switch (updated) {
             case 0 -> log.warn("No device was updated by id={}, offset={}", record.value(), record.offset());
