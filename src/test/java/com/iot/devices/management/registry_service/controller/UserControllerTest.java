@@ -1,6 +1,7 @@
 package com.iot.devices.management.registry_service.controller;
 
 import com.iot.devices.management.registry_service.controller.errors.ErrorHandler;
+import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
@@ -77,13 +78,13 @@ class UserControllerTest {
 
     @Test
     void createUser() throws Exception {
-        when(userService.save(any())).thenReturn(USER);
+        when(userService.save(any(CreateUserRequest.class))).thenReturn(USER);
         mockMvc.perform(post("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated());
         verify(userService).findByEmail(email);
-        verify(userService).save(any());
+        verify(userService).save(any(CreateUserRequest.class));
     }
 
     @Test

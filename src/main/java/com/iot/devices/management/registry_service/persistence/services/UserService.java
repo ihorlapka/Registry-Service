@@ -37,6 +37,10 @@ public class UserService {
         return usersRepository.save(userEntity);
     }
 
+    public User save(User user) {
+        return usersRepository.save(user);
+    }
+
     public User patch(PatchUserRequest request, User user) {
         final User patched = patchUser(request,  user);
         return usersRepository.save(patched);

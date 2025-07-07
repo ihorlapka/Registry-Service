@@ -82,7 +82,7 @@ public class ParallelDevicePatcher {
         final int updated = patchTelemetry(record.value());
         switch (updated) {
             case 0 -> log.warn("No device was updated by id={}, offset={}", record.value(), record.offset());
-            case 1 -> log.debug("Device with id={} is updated", record.value());
+            case 1 -> log.debug("Device with id={} is updated, offset={}", record.value(), record.offset());
             default -> log.warn("More than one device were updated by id={}, offset={}", record.value(), record.offset());
         }
     }

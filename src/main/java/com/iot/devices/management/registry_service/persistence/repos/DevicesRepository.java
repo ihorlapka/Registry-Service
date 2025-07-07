@@ -76,13 +76,13 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
             WHERE id = :id
             """, nativeQuery = true)
     int updateEnergyMeterTelemetry(@NonNull @Param("id") UUID id,
-                                  @Param("status") String status,
-                                  @Param("firmwareVersion") String firmwareVersion,
-                                  @Param("updatedAt") OffsetDateTime updatedAt,
-                                  @Param("voltage") Float voltage,
-                                  @Param("current") Float current,
-                                  @Param("power") Float power,
-                                  @Param("energyConsumed") Float energyConsumed);
+                                   @Param("status") String status,
+                                   @Param("firmwareVersion") String firmwareVersion,
+                                   @Param("updatedAt") OffsetDateTime updatedAt,
+                                   @Param("voltage") Float voltage,
+                                   @Param("current") Float current,
+                                   @Param("power") Float power,
+                                   @Param("energyConsumed") Float energyConsumed);
 
     @Modifying
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
@@ -134,13 +134,13 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
             WHERE id = :id
             """, nativeQuery = true)
     int updateSmartPlugTelemetry(@NonNull @Param("id") UUID id,
-                                  @Param("status") String status,
-                                  @Param("firmwareVersion") String firmwareVersion,
-                                  @Param("updatedAt") OffsetDateTime updatedAt,
-                                  @Param("isOn") Boolean isOn,
-                                  @Param("voltage") Float voltage,
-                                  @Param("current") Float current,
-                                  @Param("powerUsage") Float powerUsage);
+                                 @Param("status") String status,
+                                 @Param("firmwareVersion") String firmwareVersion,
+                                 @Param("updatedAt") OffsetDateTime updatedAt,
+                                 @Param("isOn") Boolean isOn,
+                                 @Param("voltage") Float voltage,
+                                 @Param("current") Float current,
+                                 @Param("powerUsage") Float powerUsage);
 
     @Modifying
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
@@ -161,12 +161,12 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
             WHERE id = :id
             """, nativeQuery = true)
     int updateSoilMoistureSensorTelemetry(@NonNull @Param("id") UUID id,
-                                  @Param("status") String status,
-                                  @Param("firmwareVersion") String firmwareVersion,
-                                  @Param("updatedAt") OffsetDateTime updatedAt,
-                                  @Param("moisturePercentage") Float moisturePercentage,
-                                  @Param("soilTemperature") Float soilTemperature,
-                                  @Param("batteryLevel") Integer batteryLevel);
+                                          @Param("status") String status,
+                                          @Param("firmwareVersion") String firmwareVersion,
+                                          @Param("updatedAt") OffsetDateTime updatedAt,
+                                          @Param("moisturePercentage") Float moisturePercentage,
+                                          @Param("soilTemperature") Float soilTemperature,
+                                          @Param("batteryLevel") Integer batteryLevel);
 
     @Modifying
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
@@ -181,7 +181,8 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
                             jsonb_build_object(
                                 'temperature', to_jsonb(:temperature),
                                 'humidity', to_jsonb(:humidity),
-                                'pressure', to_jsonb(:pressure)
+                                'pressure', to_jsonb(:pressure),
+                                'unit', to_jsonb(:unit)
                             )
                         )
                     )
@@ -196,8 +197,6 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
                                          @Param("humidity") Float humidity,
                                          @Param("pressure") Float pressure,
                                          @Param("unit") String unit);
-
-
 
     @Modifying
     @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
