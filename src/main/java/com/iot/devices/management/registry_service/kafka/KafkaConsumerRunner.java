@@ -111,7 +111,7 @@ public class KafkaConsumerRunner {
             } else {
                 log.error("Async commit failed for offsets: {}. Error: {}", committedOffsets, ex.getMessage());
                 if (ex instanceof KafkaException) {
-                    System.err.println("Kafka commit error: " + ex.getMessage());
+                    log.error("Kafka commit error: {}", ex.getMessage());
                 }
             }
         };

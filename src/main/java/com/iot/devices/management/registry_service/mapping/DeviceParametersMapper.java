@@ -6,6 +6,7 @@ import lombok.experimental.UtilityClass;
 import java.util.UUID;
 
 import static java.time.ZoneOffset.UTC;
+import static java.util.Optional.ofNullable;
 
 @UtilityClass
 public class DeviceParametersMapper {
@@ -16,9 +17,9 @@ public class DeviceParametersMapper {
                 doorSensor.getDoorState().name(),
                 doorSensor.getBatteryLevel(),
                 doorSensor.getTamperAlert(),
-                doorSensor.getStatus().name(),
+                ofNullable(doorSensor.getStatus()).map(Enum::name).orElse(null),
                 doorSensor.getFirmwareVersion(),
-                doorSensor.getLastOpened().atOffset(UTC),
+                ofNullable(doorSensor.getLastOpened()).map(instant -> instant.atOffset(UTC)).orElse(null),
                 doorSensor.getLastUpdated().atOffset(UTC)
         );
     }
@@ -30,7 +31,7 @@ public class DeviceParametersMapper {
                 energyMeter.getCurrent(),
                 energyMeter.getPower(),
                 energyMeter.getEnergyConsumed(),
-                energyMeter.getStatus().name(),
+                ofNullable(energyMeter.getStatus()).map(Enum::name).orElse(null),
                 energyMeter.getFirmwareVersion(),
                 energyMeter.getLastUpdated().atOffset(UTC)
         );
@@ -42,9 +43,9 @@ public class DeviceParametersMapper {
                 smartLight.getIsOn(),
                 smartLight.getBrightness(),
                 smartLight.getColor(),
-                smartLight.getMode().name(),
+                ofNullable(smartLight.getMode()).map(Enum::name).orElse(null),
                 smartLight.getPowerConsumption(),
-                smartLight.getStatus().name(),
+                ofNullable(smartLight.getStatus()).map(Enum::name).orElse(null),
                 smartLight.getFirmwareVersion(),
                 smartLight.getLastUpdated().atOffset(UTC)
         );
@@ -57,7 +58,7 @@ public class DeviceParametersMapper {
                 smartPlug.getVoltage(),
                 smartPlug.getCurrent(),
                 smartPlug.getPowerUsage(),
-                smartPlug.getStatus().name(),
+                ofNullable(smartPlug.getStatus()).map(Enum::name).orElse(null),
                 smartPlug.getFirmwareVersion(),
                 smartPlug.getLastUpdated().atOffset(UTC)
         );
@@ -69,7 +70,7 @@ public class DeviceParametersMapper {
                 soilMoistureSensor.getMoisturePercentage(),
                 soilMoistureSensor.getSoilTemperature(),
                 soilMoistureSensor.getBatteryLevel(),
-                soilMoistureSensor.getStatus().name(),
+                ofNullable(soilMoistureSensor.getStatus()).map(Enum::name).orElse(null),
                 soilMoistureSensor.getFirmwareVersion(),
                 soilMoistureSensor.getLastUpdated().atOffset(UTC)
         );
@@ -81,8 +82,8 @@ public class DeviceParametersMapper {
                 temperatureSensor.getTemperature(),
                 temperatureSensor.getHumidity(),
                 temperatureSensor.getPressure(),
-                temperatureSensor.getUnit().name(),
-                temperatureSensor.getStatus().name(),
+                ofNullable(temperatureSensor.getUnit()).map(Enum::name).orElse(null),
+                ofNullable(temperatureSensor.getStatus()).map(Enum::name).orElse(null),
                 temperatureSensor.getFirmwareVersion(),
                 temperatureSensor.getLastUpdated().atOffset(UTC)
         );
@@ -94,8 +95,8 @@ public class DeviceParametersMapper {
                 thermostat.getCurrentTemperature(),
                 thermostat.getTargetTemperature(),
                 thermostat.getHumidity(),
-                thermostat.getMode().name(),
-                thermostat.getStatus().name(),
+                ofNullable(thermostat.getMode()).map(Enum::name).orElse(null),
+                ofNullable(thermostat.getStatus()).map(Enum::name).orElse(null),
                 thermostat.getFirmwareVersion(),
                 thermostat.getLastUpdated().atOffset(UTC)
         );

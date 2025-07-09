@@ -33,14 +33,14 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
             status = COALESCE(CASE WHEN :status IS NULL THEN NULL ELSE CAST(:status AS VARCHAR) END::device_statuses, status),
             last_active_at = COALESCE(:lastActiveAt, last_active_at),
             firmware_version = COALESCE(:firmwareVersion, firmware_version),
-            battery_level = COALESCE(:batteryLevel, battery_level),
             updated_at = COALESCE(:updatedAt, updated_at),
             telemetry = (telemetry ||
                         jsonb_strip_nulls(
                             jsonb_build_object(
                                 'doorState', to_jsonb(:doorState),
                                 'tamperAlert', to_jsonb(:tamperAlert),
-                                'lastOpened', to_jsonb(:lastOpened)
+                                'lastOpened', to_jsonb(CAST(:lastOpened AS TIMESTAMP)),
+                                'batteryLevel', to_jsonb(:batteryLevel)
                             )
                         )
                     )

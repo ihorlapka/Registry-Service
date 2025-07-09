@@ -72,7 +72,10 @@ public class DeviceService {
         return device;
     }
 
-    private static OffsetDateTime getLastActiveAt(String status, OffsetDateTime lastUpdated) {
+    private static OffsetDateTime getLastActiveAt(@Nullable String status, OffsetDateTime lastUpdated) {
+        if (status == null) {
+            return null;
+        }
         return status.equals(ONLINE.name()) ? lastUpdated : null;
     }
 
