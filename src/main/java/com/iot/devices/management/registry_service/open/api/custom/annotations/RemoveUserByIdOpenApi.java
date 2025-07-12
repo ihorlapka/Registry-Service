@@ -1,5 +1,6 @@
 package com.iot.devices.management.registry_service.open.api.custom.annotations;
 
+
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
 import com.iot.devices.management.registry_service.controller.util.UserErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,53 +19,30 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "Create a new user",
-        description = "Adds a new user to the system",
+        summary = "Remove user by Id",
+        description = "Remove user from the system",
         responses = {
                 @ApiResponse(
-                        responseCode = "201",
-                        description = "User Created",
+                        responseCode = "204",
+                        description = "User is removed",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = UserDTO.class))
                 ),
                 @ApiResponse(
-                        responseCode = "400",
-                        description = "Create User Request is invalid",
+                        responseCode = "404",
+                        description = "User is not found",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = UserErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "Bad request",
-                                        summary = "Request is invalid",
+                                        name = "UserNotFoundExample",
+                                        summary = "User is not found",
                                         value = """
                                                 {
                                                     "status": 400,
-                                                    "errorMessage": "Validation failed for argument [0]..."
-                                                    "detail": "Validation failed for one or more fields!"
-                                                    "uri": "/api/v1/users,
-                                                    "validationErrors": {
-                                                        "username": "username is required"
-                                                    }
-                                                }
-                                                """
-                                )
-                        )
-                ),
-                @ApiResponse(
-                        responseCode = "409",
-                        description = "User is already present",
-                        content = @Content(
-                                mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserErrorResponse.class),
-                                examples = @ExampleObject(
-                                        name = "DuplicatedUserExample",
-                                        summary = "User already exists",
-                                        value = """
-                                                {
-                                                    "status": 400,
-                                                    "errorMessage": "User with email: someemail@gmail.com already exists."
-                                                    "detail": "Duplicate user!"
+                                                    "errorMessage": "User with id: 1 not found."
+                                                    "detail": "Unable to find user!"
                                                     "uri": "/api/v1/users,
                                                 }
                                                 """
@@ -94,5 +72,5 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
         }
 )
-public @interface CreateUserOpenApi {
+public @interface RemoveUserByIdOpenApi {
 }

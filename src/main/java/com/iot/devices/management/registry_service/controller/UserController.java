@@ -4,9 +4,10 @@ import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
-import com.iot.devices.management.registry_service.open.api.custom.annotations.CreateUserOpenApi;
+import com.iot.devices.management.registry_service.open.api.custom.annotations.*;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class UserController {
     }
 
     @PatchMapping
+    @UpdateUserOpenApi
     public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request) {
         final Optional<User> user = userService.findByUserId(request.id());
         if (user.isEmpty()) {
@@ -61,6 +63,7 @@ public class UserController {
     }
 
     @GetMapping
+    @Hidden
     public ResponseEntity<List<UserDTO>> getAllUsers(Pageable pageable) {
         final Page<User> users = userService.findAll(pageable);
         final List<UserDTO> userDTOS = users.stream().map(this::getUserInfo).toList();
@@ -68,6 +71,7 @@ public class UserController {
     }
 
     @GetMapping("{userId}")
+    @GetUserByIdOpenApi
     public ResponseEntity<UserDTO> getUserById(@PathVariable UUID userId) {
         final Optional<User> user = userService.findByUserId(userId);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
@@ -75,6 +79,7 @@ public class UserController {
     }
 
     @GetMapping("email/{email}")
+    @GetUserByEmailOpenApi
     public ResponseEntity<UserDTO> findByEmail(@PathVariable @Valid String email) {
         final Optional<User> user = userService.findByEmail(email);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
@@ -82,6 +87,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
+    @RemoveUserByIdOpenApi
     public ResponseEntity<Void> deleteUser(@PathVariable UUID userId) {
         final int removedUser = userService.removeById(userId);
         if (removedUser < 1) {
