@@ -9,6 +9,7 @@ import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ import static com.iot.devices.management.registry_service.controller.errors.Devi
 @RestController
 @RequestMapping("/api/v1/devices")
 @RequiredArgsConstructor
+@Tag(name = "Devices", description = "CRUD operations for Devices")
 public class DeviceController {
 
     private final DeviceService deviceService;

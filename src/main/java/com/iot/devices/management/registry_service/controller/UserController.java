@@ -4,8 +4,10 @@ import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
+import com.iot.devices.management.registry_service.open.api.custom.annotations.CreateUserOpenApi;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,11 +31,13 @@ import static java.util.stream.Collectors.toSet;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Tag(name = "Users", description = "CRUD operations for users")
 public class UserController {
 
     private final UserService userService;
 
     @PostMapping
+    @CreateUserOpenApi
     public ResponseEntity<UserDTO> createUser(@RequestBody @Valid CreateUserRequest request) {
         final Optional<User> user = userService.findByEmail(request.email());
         if (user.isPresent()) {
