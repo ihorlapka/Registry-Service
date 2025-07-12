@@ -1,8 +1,7 @@
-package com.iot.devices.management.registry_service.open.api.custom.annotations;
-
+package com.iot.devices.management.registry_service.open.api.custom.annotations.users;
 
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
-import com.iot.devices.management.registry_service.controller.util.UserErrorResponse;
+import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -19,7 +18,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "Get user by Email",
+        summary = "Get user by Id",
         description = "Get present user in the system",
         responses = {
                 @ApiResponse(
@@ -34,14 +33,14 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                         description = "User is not found",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserErrorResponse.class),
+                                schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
                                         name = "UserNotFoundExample",
                                         summary = "User is not found",
                                         value = """
                                                 {
                                                     "status": 400,
-                                                    "errorMessage": "User with email: someuseremail@gmail.com is not found."
+                                                    "errorMessage": "User with id: 1 not found."
                                                     "detail": "Unable to find user!"
                                                     "uri": "/api/v1/users,
                                                 }
@@ -54,10 +53,10 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                         description = "Internal Server Error",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserErrorResponse.class),
+                                schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
                                         name = "Server error",
-                                        summary = "Database is down",
+                                        summary = "Server is down",
                                         value = """
                                                 {
                                                     "status": 500 ,
@@ -72,5 +71,5 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
         }
 )
-public @interface GetUserByEmailOpenApi {
+public @interface GetUserByIdOpenApi {
 }

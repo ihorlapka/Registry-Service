@@ -12,7 +12,7 @@ import java.util.Map;
 @ToString
 @RequiredArgsConstructor(staticName = "of")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class UserErrorResponse {
+public class ErrorResponse {
     @Schema(description = "HTTP status code")
     private final HttpStatus status;
     @Schema(description = "Error message")

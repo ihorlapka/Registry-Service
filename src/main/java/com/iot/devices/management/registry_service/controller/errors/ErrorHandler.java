@@ -1,6 +1,6 @@
 package com.iot.devices.management.registry_service.controller.errors;
 
-import com.iot.devices.management.registry_service.controller.util.UserErrorResponse;
+import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import lombok.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -25,8 +25,8 @@ import static org.springframework.http.HttpStatus.*;
 public class ErrorHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<UserErrorResponse> handleUserNotFoundException(UserNotFoundException ex, WebRequest request) {
-        final UserErrorResponse response = UserErrorResponse.of(
+    public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
                 NOT_FOUND,
                 ex.getMessage(),
                 "Unable to find user!",
@@ -36,8 +36,8 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateUserException.class)
-    public ResponseEntity<UserErrorResponse> handleDuplicateUserException(DuplicateUserException ex, WebRequest request) {
-        final UserErrorResponse response = UserErrorResponse.of(
+    public ResponseEntity<ErrorResponse> handleDuplicateUserException(DuplicateUserException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
                 CONFLICT,
                 ex.getMessage(),
                 "Duplicate user!",
@@ -47,8 +47,8 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(DeviceNotFoundException.class)
-    public ResponseEntity<UserErrorResponse> handleDeviceNotFoundException(DeviceNotFoundException ex, WebRequest request) {
-        final UserErrorResponse response = UserErrorResponse.of(
+    public ResponseEntity<ErrorResponse> handleDeviceNotFoundException(DeviceNotFoundException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
                 NOT_FOUND,
                 ex.getMessage(),
                 "Unable to find device!",
@@ -58,8 +58,8 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateDeviceException.class)
-    public ResponseEntity<UserErrorResponse> handleDuplicateDeviceException(DuplicateDeviceException ex, WebRequest request) {
-        final UserErrorResponse response = UserErrorResponse.of(
+    public ResponseEntity<ErrorResponse> handleDuplicateDeviceException(DuplicateDeviceException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
                 CONFLICT,
                 ex.getMessage(),
                 "Duplicate device!",
@@ -77,7 +77,7 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        final UserErrorResponse response = UserErrorResponse.of(
+        final ErrorResponse response = ErrorResponse.of(
                 BAD_REQUEST,
                 ex.getMessage(),
                 "Validation failed for one or more fields!",
@@ -87,10 +87,10 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<UserErrorResponse> handleAllUncaughtException(Exception ex, WebRequest request) {
+    public ResponseEntity<ErrorResponse> handleAllUncaughtException(Exception ex, WebRequest request) {
         logger.error("An unexpected error occurred: " + ex.getMessage(), ex);
 
-        final UserErrorResponse response = UserErrorResponse.of(
+        final ErrorResponse response = ErrorResponse.of(
                 INTERNAL_SERVER_ERROR,
                 ex.getMessage(),
                 "Validation failed for one or more fields!",

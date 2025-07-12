@@ -4,7 +4,7 @@ import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
-import com.iot.devices.management.registry_service.open.api.custom.annotations.*;
+import com.iot.devices.management.registry_service.open.api.custom.annotations.users.*;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
 import io.swagger.v3.oas.annotations.Hidden;

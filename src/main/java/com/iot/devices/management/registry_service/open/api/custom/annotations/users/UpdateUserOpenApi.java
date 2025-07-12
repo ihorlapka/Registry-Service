@@ -1,7 +1,7 @@
-package com.iot.devices.management.registry_service.open.api.custom.annotations;
+package com.iot.devices.management.registry_service.open.api.custom.annotations.users;
 
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
-import com.iot.devices.management.registry_service.controller.util.UserErrorResponse;
+import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -33,7 +33,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                         description = "Patch User Request is invalid",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserErrorResponse.class),
+                                schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
                                         name = "Bad request",
                                         summary = "Request is invalid",
@@ -56,7 +56,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                         description = "User is not found",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserErrorResponse.class),
+                                schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
                                         name = "UserNotFoundExample",
                                         summary = "User is not found",
@@ -76,10 +76,10 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                         description = "Internal Server Error",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserErrorResponse.class),
+                                schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
                                         name = "Server error",
-                                        summary = "Database is down",
+                                        summary = "Server is down",
                                         value = """
                                                 {
                                                     "status": 500 ,

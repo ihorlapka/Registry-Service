@@ -4,6 +4,10 @@ import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateDeviceRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
 import com.iot.devices.management.registry_service.controller.errors.UserExceptions.UserNotFoundException;
+import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.CreateDeviceOpenApi;
+import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.GetDeviceByIdOpenApi;
+import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.RemoveDeviceByIdOpenApi;
+import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.UpdateDeviceOpenApi;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
@@ -37,6 +41,7 @@ public class DeviceController {
     private final UserService userService;
 
     @PostMapping
+    @CreateDeviceOpenApi
     public ResponseEntity<DeviceDTO> createDevice(@RequestBody @Valid CreateDeviceRequest request) {
         final Optional<Device> device = deviceService.findBySerialNumber(request.serialNumber());
         if (device.isPresent()) {
@@ -50,6 +55,7 @@ public class DeviceController {
     }
 
     @PatchMapping
+    @UpdateDeviceOpenApi
     public ResponseEntity<DeviceDTO> patchDevice(@RequestBody @Valid PatchDeviceRequest request) {
         final Optional<Device> device = deviceService.findByDeviceId(request.id());
         if (device.isEmpty()) {
@@ -62,6 +68,7 @@ public class DeviceController {
     }
 
     @GetMapping("{deviceId}")
+    @GetDeviceByIdOpenApi
     @RateLimiter(name = "get_device_limiter", fallbackMethod = "rateLimitFallback")
     public ResponseEntity<DeviceDTO> getDevice(@PathVariable @NonNull UUID deviceId) {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
@@ -70,17 +77,18 @@ public class DeviceController {
                 .orElseThrow(() -> new DeviceNotFoundException(deviceId));
     }
 
-    public ResponseEntity<DeviceDTO>  rateLimitFallback(UUID deviceId, Throwable t) {
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
-    }
-
     @DeleteMapping("{deviceId}")
+    @RemoveDeviceByIdOpenApi
     public ResponseEntity<Void> deleteDevice(@PathVariable @NonNull UUID deviceId) {
         final int removedDevice = deviceService.removeById(deviceId);
         if (removedDevice < 1) {
             throw new DeviceNotFoundException(deviceId);
         }
         return ResponseEntity.noContent().build();
+    }
+
+    public ResponseEntity<DeviceDTO>  rateLimitFallback(UUID deviceId, Throwable t) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
     }
 
     private User getUserFromDB(@Nullable UUID userId) {

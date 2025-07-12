@@ -1,7 +1,7 @@
-package com.iot.devices.management.registry_service.open.api.custom.annotations;
+package com.iot.devices.management.registry_service.open.api.custom.annotations.devices;
 
-import com.iot.devices.management.registry_service.controller.dto.UserDTO;
-import com.iot.devices.management.registry_service.controller.util.UserErrorResponse;
+import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
+import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -18,31 +18,31 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "Get user by Id",
-        description = "Get present user in the system",
+        summary = "Get device by Id",
+        description = "Get present device in the system",
         responses = {
                 @ApiResponse(
                         responseCode = "200",
-                        description = "User is found",
+                        description = "Device is found",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserDTO.class))
+                                schema = @Schema(implementation = DeviceDTO.class))
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "User is not found",
+                        description = "Device is not found",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserErrorResponse.class),
+                                schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "UserNotFoundExample",
-                                        summary = "User is not found",
+                                        name = "DeviceNotFoundExample",
+                                        summary = "Device is not found",
                                         value = """
                                                 {
                                                     "status": 400,
-                                                    "errorMessage": "User with id: 1 not found."
-                                                    "detail": "Unable to find user!"
-                                                    "uri": "/api/v1/users,
+                                                    "errorMessage": "Device with id: 1 not found."
+                                                    "detail": "Unable to find device!"
+                                                    "uri": "/api/v1/devices,
                                                 }
                                                 """
                                 )
@@ -53,16 +53,16 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                         description = "Internal Server Error",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserErrorResponse.class),
+                                schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
                                         name = "Server error",
-                                        summary = "Database is down",
+                                        summary = "Server is down",
                                         value = """
                                                 {
                                                     "status": 500 ,
                                                     "errorMessage": "Could not open JDBC Connection for transaction"
                                                     "detail": "Unable to obtain JDBC Connection"
-                                                    "uri": "/api/v1/users
+                                                    "uri": "/api/v1/devices
                                                 }
                                                 """
                                 )
@@ -71,5 +71,5 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
         }
 )
-public @interface GetUserByIdOpenApi {
+public @interface GetDeviceByIdOpenApi {
 }
