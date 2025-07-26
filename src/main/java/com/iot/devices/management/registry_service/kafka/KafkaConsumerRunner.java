@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -34,6 +35,7 @@ public class KafkaConsumerRunner {
 
     private final ParallelDevicePatcher parallelDevicePatcher;
     private final KafkaConsumerProperties consumerProperties;
+    private final AtomicBoolean kafkaConsumerStatusMonitor;
 
     private KafkaConsumer<String, SpecificRecord> kafkaConsumer;
 
@@ -76,6 +78,7 @@ public class KafkaConsumerRunner {
                 log.info("Partitions revoked");
                 partitions.clear();
                 isSubscribed = false;
+                kafkaConsumerStatusMonitor.set(false);
             }
 
             @Override
@@ -83,6 +86,7 @@ public class KafkaConsumerRunner {
                 log.info("Partitions assigned: {}", collection);
                 partitions.addAll(collection);
                 isSubscribed = true;
+                kafkaConsumerStatusMonitor.set(!partitions.isEmpty());
             }
         });
     }
