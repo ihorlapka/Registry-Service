@@ -1,8 +1,11 @@
 package com.iot.devices.management.registry_service.kafka;
 
 import com.iot.devices.*;
+import com.iot.devices.management.registry_service.health.HealthConfig;
 import com.iot.devices.management.registry_service.kafka.properties.KafkaConsumerProperties;
 import com.iot.devices.management.registry_service.persistence.ParallelDevicePatcher;
+import io.micrometer.core.instrument.MockClock;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -39,7 +42,10 @@ import static org.mockito.Mockito.*;
                 KafkaConsumerConfig.class,
                 TestKafkaProducer.class,
                 KafkaProducerProperties.class,
-                KafkaConsumerProperties.class
+                KafkaConsumerProperties.class,
+                HealthConfig.class,
+                SimpleMeterRegistry.class,
+                MockClock.class
         },
         properties = "classpath:application-test.yaml")
 @Testcontainers

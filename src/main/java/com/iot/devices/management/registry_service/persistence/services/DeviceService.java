@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import static com.iot.devices.management.registry_service.persistence.model.enum
 import static java.time.OffsetDateTime.now;
 import static java.util.Optional.ofNullable;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DeviceService {
@@ -80,37 +82,48 @@ public class DeviceService {
     }
 
     public int patchDoorSensorTelemetry(DoorSensorTelemetry ds) {
+        logDebug(ds);
         return devicesRepository.updateDoorSensorTelemetry(ds.getId(), ds.getStatus(), getLastActiveAt(ds.getStatus(), ds.getLastUpdated()),
                 ds.getFirmwareVersion(), ds.getBatteryLevel(), ds.getLastUpdated(), ds.getDoorState(), ds.getTamperAlert(), ds.getLastOpened());
     }
 
     public int patchEnergyMeterTelemetry(EnergyMeterTelemetry em) {
+        logDebug(em);
         return devicesRepository.updateEnergyMeterTelemetry(em.getId(), em.getStatus(), em.getFirmwareVersion(), em.getLastUpdated(),
                 em.getVoltage(), em.getCurrent(), em.getPower(), em.getEnergyConsumed());
     }
 
     public int patchSmartLightTelemetry(SmartLightTelemetry sl) {
+        logDebug(sl);
         return devicesRepository.updateSmartLightTelemetry(sl.getId(), sl.getStatus(), sl.getFirmwareVersion(), sl.getLastUpdated(),
                 sl.getIsOn(), sl.getBrightness(), sl.getColour(), sl.getMode(), sl.getPowerConsumption());
     }
 
     public int patchSmartPlugTelemetry(SmartPlugTelemetry sp) {
+        logDebug(sp);
         return devicesRepository.updateSmartPlugTelemetry(sp.getId(), sp.getStatus(), sp.getFirmwareVersion(), sp.getLastUpdated(),
                 sp.getIsOn(), sp.getVoltage(), sp.getCurrent(), sp.getPowerUsage());
     }
 
     public int patchSoilMoistureSensorTelemetry(SoilMoistureSensorTelemetry sms) {
+        logDebug(sms);
         return devicesRepository.updateSoilMoistureSensorTelemetry(sms.getId(), sms.getStatus(), sms.getFirmwareVersion(),
                 sms.getLastUpdated(), sms.getMoisturePercentage(), sms.getSoilTemperature(), sms.getBatteryLevel());
     }
 
     public int patchTemperatureSensorTelemetry(TemperatureSensorTelemetry ts) {
+        logDebug(ts);
         return devicesRepository.updateTemperatureSensorTelemetry(ts.getId(), ts.getStatus(), getLastActiveAt(ts.getStatus(), ts.getLastUpdated()),
                 ts.getFirmwareVersion(), ts.getLastUpdated(), ts.getTemperature(), ts.getHumidity(), ts.getPressure(), ts.getUnit());
     }
 
     public int patchThermostatTelemetry(ThermostatTelemetry t) {
+        logDebug(t);
         return devicesRepository.updateThermostatTelemetry(t.getId(), t.getStatus(), t.getFirmwareVersion(), t.getLastUpdated(),
                 t.getCurrentTemperature(), t.getTargetTemperature(), t.getHumidity(), t.getMode());
+    }
+
+    private static void logDebug(Object o) {
+        log.debug("Patching: {}", o);
     }
 }

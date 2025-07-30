@@ -1,0 +1,81 @@
+package com.iot.devices.management.registry_service.persistence;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import com.iot.devices.*;
+import com.iot.devices.management.registry_service.mapping.DoorSensorTelemetry;
+import com.iot.devices.management.registry_service.persistence.services.DeviceService;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.avro.specific.SpecificRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
+
+import static com.iot.devices.DoorState.OPEN;
+import static java.lang.Thread.sleep;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@Slf4j
+@ActiveProfiles("test")
+@SpringBootTest(classes = {
+        RetriablePersister.class,
+        RetryConfig.class
+})
+@TestPropertySource(properties = "parallel-persister.threads-amount=3")
+@TestPropertySource(properties = {
+        "resilience4j.retry.instances.patchDeviceRetry.maxAttempts=4", // Need 4 attempts for 3 failures + 1 success
+        "resilience4j.retry.instances.patchDeviceRetry.waitDuration=100ms", // Keep wait short for test
+        "resilience4j.retry.instances.patchDeviceRetry.retryExceptions[0]=org.springframework.dao.CannotAcquireLockException",
+        "parallel-persister.threads-amount=3"
+})
+class RetriablePersisterTest {
+
+    public static final String TOPIC = "topic";
+    public static final String KEY = "key";
+
+    @MockitoBean
+    DeviceService deviceService;
+
+    @Autowired
+    RetriablePersister retriablePersister;
+
+    @BeforeAll
+    static void setUpLogging() {
+        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        rootLogger.setLevel(Level.DEBUG);
+    }
+
+    @Test
+    void retryTest() {
+        when(deviceService.patchDoorSensorTelemetry(any(DoorSensorTelemetry.class)))
+                .thenThrow(new CannotAcquireLockException("some test error 1"),
+                        new CannotAcquireLockException("some test error 2"),
+                        new CannotAcquireLockException("some test error 3"))
+                .thenAnswer(x -> {
+                    sleep(20);
+                    return 1;
+                });
+
+        String deviceId1 = UUID.randomUUID().toString();
+        Instant nowTime = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        DoorSensor doorSensor = new DoorSensor(deviceId1, OPEN, 85, false,
+                DeviceStatus.OFFLINE, nowTime, "1.0.2v", nowTime);
+
+        ConsumerRecord<String, SpecificRecord> record1 = new ConsumerRecord<>(TOPIC, 0, 0, KEY, doorSensor);
+        retriablePersister.persistWithRetries(record1);
+
+        verify(deviceService, times(4)).patchDoorSensorTelemetry(any());
+    }
+}
