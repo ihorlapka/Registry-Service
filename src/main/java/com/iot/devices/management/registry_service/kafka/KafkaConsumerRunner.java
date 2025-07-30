@@ -2,6 +2,8 @@ package com.iot.devices.management.registry_service.kafka;
 
 import com.iot.devices.management.registry_service.kafka.properties.KafkaConsumerProperties;
 import com.iot.devices.management.registry_service.persistence.ParallelDevicePatcher;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +38,10 @@ public class KafkaConsumerRunner {
     private final ParallelDevicePatcher parallelDevicePatcher;
     private final KafkaConsumerProperties consumerProperties;
     private final AtomicBoolean kafkaConsumerStatusMonitor;
+    private final MeterRegistry meterRegistry;
 
     private KafkaConsumer<String, SpecificRecord> kafkaConsumer;
+    private KafkaClientMetrics kafkaClientMetrics;
 
 
     @PostConstruct
@@ -72,6 +76,9 @@ public class KafkaConsumerRunner {
         final Properties properties = new Properties(consumerProperties.getProperties().size());
         properties.putAll(consumerProperties.getProperties());
         kafkaConsumer = new KafkaConsumer<>(properties);
+        kafkaClientMetrics = new KafkaClientMetrics(kafkaConsumer);
+        kafkaClientMetrics.bindTo(meterRegistry);
+
         kafkaConsumer.subscribe(List.of(consumerProperties.getTopic()), new ConsumerRebalanceListener() {
             @Override
             public void onPartitionsRevoked(Collection<TopicPartition> collection) {
@@ -124,9 +131,14 @@ public class KafkaConsumerRunner {
     private void closeConsumer() {
         try {
             if (kafkaConsumer != null) {
-                log.warn("Closing kafka consumer");
+                log.info("Closing kafka consumer");
                 kafkaConsumer.close();
                 log.info("Kafka consumer is closed");
+                if (kafkaClientMetrics != null) {
+                    log.warn("Closing kafka consumer metrics");
+                    kafkaClientMetrics.close();
+                    log.info("Kafka consumer metrics are closed");
+                }
                 isSubscribed = false;
             }
             if (!isShutdown) {
