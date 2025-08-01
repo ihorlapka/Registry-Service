@@ -2,23 +2,22 @@ package com.iot.devices.management.registry_service.persistence;
 
 import com.iot.devices.*;
 import com.iot.devices.management.registry_service.kafka.DeadLetterProducer;
+import com.iot.devices.management.registry_service.metrics.KpiMetricLogger;
+import com.iot.devices.management.registry_service.persistence.retry.RetriablePersister;
+import com.iot.devices.management.registry_service.persistence.retry.RetryProperties;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.sql.SQLTransientException;
@@ -31,18 +30,20 @@ import java.util.UUID;
 import static com.iot.devices.DoorState.OPEN;
 import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 
 @Slf4j
 @ActiveProfiles("test")
-@SpringBootTest(classes = {
-        ParallelDevicePatcher.class,
-        RetriablePersister.class,
-        RetryConfig.class
-})
-@TestPropertySource(properties = "parallel-persister.threads-amount=3")
+@SpringBootTest(
+        classes = {
+                ParallelDevicePatcher.class,
+                RetriablePersister.class,
+                RetryProperties.class
+        },
+        properties = {"logging.level.com.iot.devices.management.registry_service.persistence=DEBUG"})
 class ParallelDevicePatcherTest {
 
     public static final String TOPIC = "topic";
@@ -52,16 +53,11 @@ class ParallelDevicePatcherTest {
     DeadLetterProducer deadLetterProducer;
     @MockitoBean
     DeviceService deviceService;
+    @MockitoBean
+    KpiMetricLogger kpiMetricLogger;
 
     @Autowired
     ParallelDevicePatcher parallelDevicePatcher;
-
-
-    @BeforeAll
-    static void setUpLogging() {
-        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        rootLogger.setLevel(Level.DEBUG);
-    }
 
 
     @BeforeEach
@@ -80,8 +76,13 @@ class ParallelDevicePatcherTest {
         });
     }
 
+    @AfterEach
+    void tearDown() {
+        verifyNoMoreInteractions(deviceService, deadLetterProducer, kpiMetricLogger);
+    }
+
     @Test
-    void allMessagesInOnePartition() throws SQLTransientException {
+    void allMessagesInOnePartition() {
         String deviceId1 = UUID.randomUUID().toString();
         String deviceId2 = UUID.randomUUID().toString();
         String deviceId3 = UUID.randomUUID().toString();
@@ -111,11 +112,12 @@ class ParallelDevicePatcherTest {
         verify(deviceService).patchDoorSensorTelemetry(any());
         verify(deviceService).patchThermostatTelemetry(any());
         verify(deviceService).patchSmartPlugTelemetry(any());
-        verifyNoInteractions(deadLetterProducer);
+        verify(kpiMetricLogger).incActiveThreadsInParallelPatcher(3);
+        verify(kpiMetricLogger, times(3)).recordDeviceUpdatingTime(anyString(), anyLong());
     }
 
     @Test
-    void severalPartitions() throws SQLTransientException {
+    void severalPartitions() {
         String deviceId1 = UUID.randomUUID().toString();
         String deviceId2 = UUID.randomUUID().toString();
         String deviceId3 = UUID.randomUUID().toString();
@@ -165,7 +167,8 @@ class ParallelDevicePatcherTest {
         verify(deviceService, times(2)).patchDoorSensorTelemetry(any());
         verify(deviceService, times(2)).patchThermostatTelemetry(any());
         verify(deviceService, times(2)).patchSmartPlugTelemetry(any());
-        verifyNoInteractions(deadLetterProducer);
+        verify(kpiMetricLogger).incActiveThreadsInParallelPatcher(geq(5));
+        verify(kpiMetricLogger, times(6)).recordDeviceUpdatingTime(anyString(), anyLong());
     }
 
     @Test
@@ -207,6 +210,8 @@ class ParallelDevicePatcherTest {
         verify(deviceService, times(4)).patchDoorSensorTelemetry(any());
         verify(deviceService).patchThermostatTelemetry(any());
         verify(deviceService).patchSmartPlugTelemetry(any());
-        verifyNoInteractions(deadLetterProducer);
+        verify(kpiMetricLogger).incActiveThreadsInParallelPatcher(3);
+        verify(kpiMetricLogger, times(3)).recordDeviceUpdatingTime(anyString(), anyLong());
+        verify(kpiMetricLogger, times(3)).incRetriesCount();
     }
 }

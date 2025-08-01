@@ -40,6 +40,9 @@ management:
     web:
       exposure:
         include: "*"
+  health:
+    db:
+      enabled: true
 resilience4j:
   ratelimiter:
     instances:
@@ -47,15 +50,6 @@ resilience4j:
         limitForPeriod: 1000       # Max calls per period
         limitRefreshPeriod: 1s     # Period
         timeoutDuration: 0
-  retry:
-    instances:
-      patchDeviceRetry:
-        maxAttempts: 5
-        waitDuration: 500ms
-        retryExceptions:
-          - org.springframework.dao.TransientDataAccessException
-          - java.sql.SQLTransientException
-          - java.sql.SQLRecoverableException
 kafka:
   consumer:
     topic: iot-devices-data
@@ -76,5 +70,10 @@ kafka:
       fetch.min.bytes: 1
       fetch.max.wait.ms: 5000
       value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
-parallel-persister:
-  threads-amount: 10
+parallel.patcher:
+  threads.amount: 10
+  executor.termination.time.ms: 5000
+persister:
+  retries:
+    max.attempts: 15
+    wait.duration.ms: 3000

@@ -81,9 +81,14 @@ kafka:
       key.serializer: org.apache.kafka.common.serialization.StringSerializer
       value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
       schema.registry.url: mock://my-scope:8081
-parallel-persister:
-  threads-amount: 10
+parallel.patcher:
+  threads.amount: 10
+  executor.termination.time.ms: 5000
 logging:
   level:
     org.hibernate.SQL: DEBUG
     org.hibernate.orm.jdbc.bind: TRACE
+persister:
+  retries:
+    max.attempts: 5
+    wait.duration.ms: 100

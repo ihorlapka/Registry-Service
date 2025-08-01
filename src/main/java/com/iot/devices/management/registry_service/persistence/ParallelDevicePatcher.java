@@ -1,6 +1,9 @@
 package com.iot.devices.management.registry_service.persistence;
 
 import com.iot.devices.management.registry_service.kafka.DeadLetterProducer;
+import com.iot.devices.management.registry_service.metrics.KpiMetricLogger;
+import com.iot.devices.management.registry_service.persistence.retry.RetriablePersister;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -17,21 +20,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 @Slf4j
 @Component
 public class ParallelDevicePatcher {
 
-    private static final String PROPERTIES_PREFIX = "parallel-persister";
+    private static final String PROPERTIES_PREFIX = "parallel.patcher";
 
-    private final ExecutorService executorService;
+    private final ThreadPoolExecutor executorService;
+    private final int executorTerminationTimeMs;
     private final DeadLetterProducer deadLetterProducer;
     private final RetriablePersister retriablePersister;
+    private final KpiMetricLogger kpiMetricLogger;
 
-    public ParallelDevicePatcher(@Value("${" + PROPERTIES_PREFIX + ".threads-amount}") int threadsAmount,
-                                 DeadLetterProducer deadLetterProducer, RetriablePersister retriablePersister) {
-        this.executorService = Executors.newFixedThreadPool(threadsAmount);
+    public ParallelDevicePatcher(@Value("${" + PROPERTIES_PREFIX + ".threads.amount}") int threadsAmount,
+                                 @Value("${" + PROPERTIES_PREFIX + ".executor.termination.time.ms}") int executorTerminationTimeMs,
+                                 DeadLetterProducer deadLetterProducer, RetriablePersister retriablePersister, KpiMetricLogger kpiMetricLogger) {
+        this.executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadsAmount);
+        this.executorTerminationTimeMs = executorTerminationTimeMs;
         this.deadLetterProducer = deadLetterProducer;
         this.retriablePersister = retriablePersister;
+        this.kpiMetricLogger = kpiMetricLogger;
     }
 
 
@@ -65,6 +75,7 @@ public class ParallelDevicePatcher {
                 }
             }, executorService));
         }
+        kpiMetricLogger.incActiveThreadsInParallelPatcher(executorService.getActiveCount());
         CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
         return offsetsToCommit;
     }
@@ -73,5 +84,16 @@ public class ParallelDevicePatcher {
         return e instanceof SQLTransientException
                 || e instanceof SQLRecoverableException
                 || e instanceof TransientDataAccessException; //TODO: maybe there are more retriable exceptions
+    }
+
+    @PreDestroy
+    private void shutdown() throws InterruptedException {
+        executorService.shutdown();
+        if (!executorService.awaitTermination(executorTerminationTimeMs, MILLISECONDS)) {
+            executorService.shutdownNow();
+            log.info("Executor shutdown forced");
+        } else {
+            log.info("Executor shutdown gracefully");
+        }
     }
 }
