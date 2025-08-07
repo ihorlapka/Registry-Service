@@ -58,7 +58,7 @@ public class ParallelDevicePatcher {
                             record.value(), record.offset(), e);
                     throw new CompletionException(e);
                 } catch (NullPointerException | IllegalArgumentException | NonTransientDataAccessException e ) {
-                    deadLetterProducer.send(record.value());
+                    deadLetterProducer.send(record.key(), record.value());
                     log.error("Non-retriable error, failed to update {}, sending message to dead-letter-topic, offset={} will be committed",
                             record.value(), record.offset(), e);
                     offsetsToCommit.add(new OffsetAndMetadata(newOffsetToReadFrom));

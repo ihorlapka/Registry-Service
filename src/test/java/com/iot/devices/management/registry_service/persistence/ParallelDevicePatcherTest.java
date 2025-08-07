@@ -286,9 +286,9 @@ class ParallelDevicePatcherTest {
         SmartPlug smartPlug = new SmartPlug(deviceId3, true, 230f, 227f, 99f,
                 DeviceStatus.MAINTENANCE, null, nowTime.minus(5, ChronoUnit.MINUTES));
 
-        ConsumerRecord<String, SpecificRecord> record1 = new ConsumerRecord<>(TOPIC, 0, 0, KEY, doorSensor);
-        ConsumerRecord<String, SpecificRecord> record2 = new ConsumerRecord<>(TOPIC, 0, 1, KEY, thermostat);
-        ConsumerRecord<String, SpecificRecord> record3 = new ConsumerRecord<>(TOPIC, 0, 2, KEY, smartPlug);
+        ConsumerRecord<String, SpecificRecord> record1 = new ConsumerRecord<>(TOPIC, 0, 0, doorSensor.getDeviceId(), doorSensor);
+        ConsumerRecord<String, SpecificRecord> record2 = new ConsumerRecord<>(TOPIC, 0, 1, thermostat.getDeviceId(), thermostat);
+        ConsumerRecord<String, SpecificRecord> record3 = new ConsumerRecord<>(TOPIC, 0, 2, smartPlug.getDeviceId(), smartPlug);
 
         Map<String, ConsumerRecord<String, SpecificRecord>> recordsById = new HashMap<>(3);
         recordsById.put(deviceId1, record1);
@@ -304,6 +304,6 @@ class ParallelDevicePatcherTest {
         verify(kpiMetricLogger).incActiveThreadsInParallelPatcher(3);
         verify(kpiMetricLogger, times(2)).recordDeviceUpdatingTime(anyString(), anyLong());
         verify(kpiMetricLogger).incNonRetriableErrorsCount(NullPointerException.class.getSimpleName());
-        verify(deadLetterProducer).send(doorSensor);
+        verify(deadLetterProducer).send(doorSensor.getDeviceId(), doorSensor);
     }
 }
