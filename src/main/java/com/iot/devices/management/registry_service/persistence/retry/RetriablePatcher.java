@@ -27,13 +27,13 @@ import static java.lang.Thread.sleep;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RetriablePersister {
+public class RetriablePatcher {
 
     private final DeviceService deviceService;
     private final RetryProperties retryProperties;
     private final KpiMetricLogger kpiMetricLogger;
 
-    public void persistWithRetries(ConsumerRecord<String, SpecificRecord> record) {
+    public void patchWithRetries(ConsumerRecord<String, SpecificRecord> record) throws Exception {
         int currentTry = 0;
         Exception lastException = null;
         while (currentTry < retryProperties.getMaxAttempts()) {
@@ -49,14 +49,12 @@ public class RetriablePersister {
                 kpiMetricLogger.incRetriesCount();
                 lastException = e;
                 currentTry++;
-            } catch (Exception e) {
-                log.error("A non-retriable error occurred while persisting record. Failing immediately.", e);
-                kpiMetricLogger.incNonRetriableErrorsCount();
-                throw new RuntimeException("Non-retriable error", e);
             }
         }
-        log.error("All {} attempts to persist record failed.", retryProperties.getMaxAttempts(), lastException);
-        throw new RuntimeException("Update failed after max retries.", lastException);
+        if (lastException != null) {
+            log.error("All {} attempts to persist record failed.", retryProperties.getMaxAttempts(), lastException);
+            throw lastException;
+        }
     }
 
     private void persist(ConsumerRecord<String, SpecificRecord> record, int currentTry)

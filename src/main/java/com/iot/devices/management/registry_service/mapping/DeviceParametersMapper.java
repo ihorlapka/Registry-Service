@@ -14,7 +14,7 @@ public class DeviceParametersMapper {
     public static DoorSensorTelemetry mapDoorSensor(DoorSensor doorSensor) {
         return DoorSensorTelemetry.of(
                 UUID.fromString(doorSensor.getDeviceId()),
-                doorSensor.getDoorState().name(),
+                ofNullable(doorSensor.getDoorState()).map(Enum::name).orElse(null),
                 doorSensor.getBatteryLevel(),
                 doorSensor.getTamperAlert(),
                 ofNullable(doorSensor.getStatus()).map(Enum::name).orElse(null),

@@ -2,24 +2,23 @@ package com.iot.devices.management.registry_service.persistence;
 
 import com.iot.devices.management.registry_service.kafka.DeadLetterProducer;
 import com.iot.devices.management.registry_service.metrics.KpiMetricLogger;
-import com.iot.devices.management.registry_service.persistence.retry.RetriablePersister;
+import com.iot.devices.management.registry_service.persistence.retry.RetriablePatcher;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.NonTransientDataAccessException;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLRecoverableException;
 import java.sql.SQLTransientException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.Comparator.comparingLong;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Slf4j
@@ -31,59 +30,54 @@ public class ParallelDevicePatcher {
     private final ThreadPoolExecutor executorService;
     private final int executorTerminationTimeMs;
     private final DeadLetterProducer deadLetterProducer;
-    private final RetriablePersister retriablePersister;
+    private final RetriablePatcher retriablePatcher;
     private final KpiMetricLogger kpiMetricLogger;
 
     public ParallelDevicePatcher(@Value("${" + PROPERTIES_PREFIX + ".threads.amount}") int threadsAmount,
                                  @Value("${" + PROPERTIES_PREFIX + ".executor.termination.time.ms}") int executorTerminationTimeMs,
-                                 DeadLetterProducer deadLetterProducer, RetriablePersister retriablePersister, KpiMetricLogger kpiMetricLogger) {
+                                 DeadLetterProducer deadLetterProducer, RetriablePatcher retriablePatcher, KpiMetricLogger kpiMetricLogger) {
         this.executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadsAmount);
         this.executorTerminationTimeMs = executorTerminationTimeMs;
         this.deadLetterProducer = deadLetterProducer;
-        this.retriablePersister = retriablePersister;
+        this.retriablePatcher = retriablePatcher;
         this.kpiMetricLogger = kpiMetricLogger;
     }
 
 
-    public Map<TopicPartition, OffsetAndMetadata> patch(Map<String, ConsumerRecord<String, SpecificRecord>> recordById) {
-        final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new ConcurrentHashMap<>();
+    public Optional<OffsetAndMetadata> patch(Map<String, ConsumerRecord<String, SpecificRecord>> recordById) {
+        final Set<OffsetAndMetadata> offsetsToCommit = new ConcurrentSkipListSet<>(comparingLong(OffsetAndMetadata::offset));
         final List<CompletableFuture<Void>> futures = new ArrayList<>(recordById.size());
-        for (Map.Entry<String, ConsumerRecord<String, SpecificRecord>> entry : recordById.entrySet()) {
+        for (ConsumerRecord<String, SpecificRecord> record : sortRecordsByOffsets(recordById)) {
             futures.add(CompletableFuture.runAsync(() -> {
-                final ConsumerRecord<String, SpecificRecord> record = entry.getValue();
-                long newOffsetToReadFrom = record.offset() + 1;
+                final long newOffsetToReadFrom = record.offset() + 1;
                 try {
-                    retriablePersister.persistWithRetries(record);
-                    offsetsToCommit.compute(new TopicPartition(record.topic(), record.partition()), (k, v) -> {
-                        if (v == null || v.offset() < newOffsetToReadFrom) {
-                            return new OffsetAndMetadata(newOffsetToReadFrom);
-                        } else {
-                            return v;
-                        }
-                    });
+                    retriablePatcher.patchWithRetries(record);
+                    offsetsToCommit.add(new OffsetAndMetadata(newOffsetToReadFrom));
+                } catch (SQLTransientException | SQLRecoverableException | TransientDataAccessException e) {
+                    log.error("Failed to update device {} after retries, offset={} will be retried after consumer restart",
+                            record.value(), record.offset(), e);
+                    throw new CompletionException(e);
+                } catch (NullPointerException | IllegalArgumentException | NonTransientDataAccessException e ) {
+                    deadLetterProducer.send(record.value());
+                    log.error("Non-retriable error, failed to update {}, sending message to dead-letter-topic, offset={} will be committed",
+                            record.value(), record.offset(), e);
+                    offsetsToCommit.add(new OffsetAndMetadata(newOffsetToReadFrom));
+                    kpiMetricLogger.incNonRetriableErrorsCount(e.getClass().getSimpleName());
                 } catch (Exception e) {
-                    if (!isRetriableException(e)) {
-                        log.error("Failed to update device with id={} after retries, sending message to dead-letter-topic, offset={} will be committed",
-                                record.value(), record.offset(), e);
-                        deadLetterProducer.send(record.value());
-                        offsetsToCommit.put(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset()));
-                    } else {
-                        log.error("Failed to update device with id={} after retries, offset={} will be retried after consumer restart",
-                                record.value(), record.offset(), e);
-                        throw new RuntimeException(e);
-                    }
+                    log.error("Failed to patch device", e);
+                    throw new CompletionException(e);
                 }
             }, executorService));
         }
         kpiMetricLogger.incActiveThreadsInParallelPatcher(executorService.getActiveCount());
         CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
-        return offsetsToCommit;
+        return offsetsToCommit.stream().max(comparingLong(OffsetAndMetadata::offset));
     }
 
-    private boolean isRetriableException(Exception e) {
-        return e instanceof SQLTransientException
-                || e instanceof SQLRecoverableException
-                || e instanceof TransientDataAccessException; //TODO: maybe there are more retriable exceptions
+    private List<ConsumerRecord<String, SpecificRecord>> sortRecordsByOffsets(Map<String, ConsumerRecord<String, SpecificRecord>> recordById) {
+        return recordById.values().stream()
+                .sorted(comparingLong(ConsumerRecord::offset))
+                .toList();
     }
 
     @PreDestroy

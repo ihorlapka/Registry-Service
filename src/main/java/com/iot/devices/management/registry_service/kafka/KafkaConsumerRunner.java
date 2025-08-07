@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,8 +55,13 @@ public class KafkaConsumerRunner {
                     subscribe();
                 }
                 final ConsumerRecords<String, SpecificRecord> records = kafkaConsumer.poll(Duration.of(consumerProperties.getPollTimeoutMs(), MILLIS));
-                final Map<String, ConsumerRecord<String, SpecificRecord>> filteredRecordById = filterDeprecatedRecords(records);
-                final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = parallelDevicePatcher.patch(filteredRecordById);
+                final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>(partitions.size());
+                for (TopicPartition partition : records.partitions()) {
+                    final List<ConsumerRecord<String, SpecificRecord>> partitionRecords = records.records(partition);
+                    final Map<String, ConsumerRecord<String, SpecificRecord>> filteredRecordById = filterDeprecatedRecords(partitionRecords);
+                    final Optional<OffsetAndMetadata> offset = parallelDevicePatcher.patch(filteredRecordById);
+                    offset.ifPresent(o -> offsetsToCommit.put(partition, o));
+                }
                 if (!offsetsToCommit.isEmpty()) {
                     kafkaConsumer.commitAsync(offsetsToCommit, getOffsetCommitCallback());
                 }
@@ -98,8 +102,8 @@ public class KafkaConsumerRunner {
         });
     }
 
-    private Map<String, ConsumerRecord<String, SpecificRecord>> filterDeprecatedRecords(ConsumerRecords<String, SpecificRecord> records) {
-        final Map<String, ConsumerRecord<String, SpecificRecord>> filteredRecords = new ConcurrentHashMap<>();
+    private Map<String, ConsumerRecord<String, SpecificRecord>> filterDeprecatedRecords(List<ConsumerRecord<String, SpecificRecord>> records) {
+        final Map<String, ConsumerRecord<String, SpecificRecord>> filteredRecords = new HashMap<>(records.size());
         for (ConsumerRecord<String, SpecificRecord> record : records) {
             filteredRecords.compute(record.key(), (k, v) -> {
                 if (v == null) {

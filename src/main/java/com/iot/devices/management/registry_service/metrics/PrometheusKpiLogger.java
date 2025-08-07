@@ -16,21 +16,17 @@ public class PrometheusKpiLogger implements KpiMetricLogger {
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final ConcurrentMap<String, Counter> notUpdatedDevicesCounters = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Counter> severalUpdatedDevicesCounters = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Counter> nonRetriableErrorsCounters = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, DistributionSummary> deviceUpdatingTimeSummaries = new ConcurrentHashMap<>();
 
     private final MeterRegistry meterRegistry;
     private final Counter retriesCounter;
-    private final Counter nonRetriableErrorsCounter;
 
     public PrometheusKpiLogger(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
 
         this.retriesCounter = Counter.builder("not_updated_devices_count")
                 .description("The number of retries during patching device")
-                .register(meterRegistry);
-
-        this.nonRetriableErrorsCounter = Counter.builder("non_retriable_errors_count")
-                .description("The number of non-retriable exceptions")
                 .register(meterRegistry);
 
         Gauge.builder("parallel_persister_active_threads", activeThreads, AtomicInteger::get)
@@ -74,8 +70,13 @@ public class PrometheusKpiLogger implements KpiMetricLogger {
     }
 
     @Override
-    public void incNonRetriableErrorsCount() {
-        nonRetriableErrorsCounter.increment();
+    public void incNonRetriableErrorsCount(String errorName) {
+        nonRetriableErrorsCounters.computeIfAbsent(errorName, (error) ->
+                        Counter.builder("non_retriable_errors_count")
+                                .description("The number of non-retriable exceptions")
+                                .tag("error", error)
+                                .register(meterRegistry))
+                .increment();
     }
 
     @Override

@@ -3,7 +3,7 @@ package com.iot.devices.management.registry_service.persistence;
 import com.iot.devices.*;
 import com.iot.devices.management.registry_service.mapping.DoorSensorTelemetry;
 import com.iot.devices.management.registry_service.metrics.KpiMetricLogger;
-import com.iot.devices.management.registry_service.persistence.retry.RetriablePersister;
+import com.iot.devices.management.registry_service.persistence.retry.RetriablePatcher;
 import com.iot.devices.management.registry_service.persistence.retry.RetryProperties;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +31,10 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("test")
 @SpringBootTest(
         classes = {
-                RetriablePersister.class,
+                RetriablePatcher.class,
                 RetryProperties.class
         }, properties = {"logging.level.com.iot.devices.management.registry_service.persistence=DEBUG"})
-class RetriablePersisterTest {
+class RetriablePatcherTest {
 
     public static final String TOPIC = "topic";
     public static final String KEY = "key";
@@ -45,7 +45,7 @@ class RetriablePersisterTest {
     KpiMetricLogger kpiMetricLogger;
 
     @Autowired
-    RetriablePersister retriablePersister;
+    RetriablePatcher retriablePatcher;
 
     @AfterEach
     void tearDown() {
@@ -53,7 +53,7 @@ class RetriablePersisterTest {
     }
 
     @Test
-    void successAfterRetries() {
+    void successAfterRetries() throws Exception {
         when(deviceService.patchDoorSensorTelemetry(any(DoorSensorTelemetry.class)))
                 .thenThrow(new CannotAcquireLockException("some test error 1"),
                         new CannotAcquireLockException("some test error 2"),
@@ -69,7 +69,7 @@ class RetriablePersisterTest {
                 DeviceStatus.OFFLINE, nowTime, "1.0.2v", nowTime);
 
         ConsumerRecord<String, SpecificRecord> record1 = new ConsumerRecord<>(TOPIC, 0, 0, KEY, doorSensor);
-        retriablePersister.persistWithRetries(record1);
+        retriablePatcher.patchWithRetries(record1);
         verify(deviceService, times(4)).patchDoorSensorTelemetry(any());
         verify(kpiMetricLogger, times(3)).incRetriesCount();
         verify(kpiMetricLogger).recordDeviceUpdatingTime(anyString(), anyLong());
@@ -90,7 +90,7 @@ class RetriablePersisterTest {
                 DeviceStatus.OFFLINE, nowTime, "1.0.2v", nowTime);
 
         ConsumerRecord<String, SpecificRecord> record = new ConsumerRecord<>(TOPIC, 0, 0, KEY, doorSensor);
-        Assertions.assertThrows(RuntimeException.class, () -> retriablePersister.persistWithRetries(record));
+        Assertions.assertThrows(RuntimeException.class, () -> retriablePatcher.patchWithRetries(record));
         verify(deviceService, times(5)).patchDoorSensorTelemetry(any());
         verify(kpiMetricLogger, times(5)).incRetriesCount();
     }
@@ -106,8 +106,7 @@ class RetriablePersisterTest {
                 DeviceStatus.OFFLINE, nowTime, "1.0.2v", nowTime);
 
         ConsumerRecord<String, SpecificRecord> record = new ConsumerRecord<>(TOPIC, 0, 0, KEY, doorSensor);
-        Assertions.assertThrows(RuntimeException.class, () -> retriablePersister.persistWithRetries(record));
+        Assertions.assertThrows(RuntimeException.class, () -> retriablePatcher.patchWithRetries(record));
         verify(deviceService, times(1)).patchDoorSensorTelemetry(any(DoorSensorTelemetry.class));
-        verify(kpiMetricLogger).incNonRetriableErrorsCount();
     }
 }

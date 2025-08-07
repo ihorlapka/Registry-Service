@@ -5,6 +5,6 @@ public interface KpiMetricLogger {
     void recordDeviceUpdatingTime(String deviceType, long l);
     void incSeveralUpdatedDevices(String deviceType);
     void incRetriesCount();
-    void incNonRetriableErrorsCount();
+    void incNonRetriableErrorsCount(String errorName);
     void incActiveThreadsInParallelPatcher(int activeThreadsCount);
 }
