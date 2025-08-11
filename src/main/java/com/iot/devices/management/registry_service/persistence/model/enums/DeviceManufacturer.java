@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum DeviceManufacturer {
-    SAMSUNG("Sumsung"),
+    SAMSUNG("Samsung"),
     CISCO_SYSTEMS("Cisco_Systems"),
     HONEYWELL("Honeywell"),
     BOSCH("Bosch"),
