@@ -38,8 +38,8 @@ public class DeadLetterProducer {
 
     public void send(String key, SpecificRecord telemetry) {
         log.info("Sending to dead-letter-topic events={}", telemetry);
-            final ProducerRecord<String, SpecificRecord> record = new ProducerRecord<>(producerProperties.getTopic(), key, telemetry);
-            kafkaProducer.send(record, getCallback(telemetry));
+        final ProducerRecord<String, SpecificRecord> record = new ProducerRecord<>(producerProperties.getTopic(), key, telemetry);
+        kafkaProducer.send(record, getCallback(telemetry));
     }
 
     private Callback getCallback(SpecificRecord telemetry) {

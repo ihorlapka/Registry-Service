@@ -69,7 +69,7 @@ public class ParallelDevicePatcher {
                 }
             }, executorService));
         }
-        kpiMetricLogger.incActiveThreadsInParallelPatcher(executorService.getActiveCount());
+        kpiMetricLogger.recordActiveThreadsInParallelPatcher(executorService.getActiveCount());
         CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
         return offsetsToCommit.stream().max(comparingLong(OffsetAndMetadata::offset));
     }

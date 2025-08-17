@@ -69,7 +69,7 @@ public class RetriablePatcher {
             }
             case 1 -> {
                 kpiMetricLogger.recordDeviceUpdatingTime(deviceType, currentTimeMillis() - startTimeMs);
-                log.debug("Successfully updated {} offset={}, tryNum={}", record.value(), record.offset(), currentTry);
+                log.info("Successfully updated {} offset={}, tryNum={}", record.value(), record.offset(), currentTry);
             }
             default -> {
                 kpiMetricLogger.incSeveralUpdatedDevices(deviceType);

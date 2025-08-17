@@ -1,6 +1,7 @@
 package com.iot.devices.management.registry_service.kafka;
 
 import com.iot.devices.management.registry_service.kafka.properties.KafkaConsumerProperties;
+import com.iot.devices.management.registry_service.metrics.KpiMetricLogger;
 import com.iot.devices.management.registry_service.persistence.ParallelDevicePatcher;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics;
@@ -38,6 +39,7 @@ public class KafkaConsumerRunner {
     private final KafkaConsumerProperties consumerProperties;
     private final AtomicBoolean kafkaConsumerStatusMonitor;
     private final MeterRegistry meterRegistry;
+    private final KpiMetricLogger kpiMetricLogger;
 
     private KafkaConsumer<String, SpecificRecord> kafkaConsumer;
     private KafkaClientMetrics kafkaClientMetrics;
@@ -55,6 +57,8 @@ public class KafkaConsumerRunner {
                     subscribe();
                 }
                 final ConsumerRecords<String, SpecificRecord> records = kafkaConsumer.poll(Duration.of(consumerProperties.getPollTimeoutMs(), MILLIS));
+//                kafkaConsumer.commitAsync(getOffsetCommitCallback());
+                kpiMetricLogger.recordRecordsInOnePoll(records.count());
                 final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>(partitions.size());
                 for (TopicPartition partition : records.partitions()) {
                     final List<ConsumerRecord<String, SpecificRecord>> partitionRecords = records.records(partition);

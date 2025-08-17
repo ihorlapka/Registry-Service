@@ -26,7 +26,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -43,6 +43,8 @@ management:
   health:
     db:
       enabled: true
+  metrics:
+    data.repository.autotime.enabled: true
 resilience4j:
   ratelimiter:
     instances:
@@ -65,9 +67,9 @@ kafka:
       specific.avro.reader: true
       auto.offset.reset: earliest
       enable.auto.commit: false
-      max.poll.records: 500
+      max.poll.records: 10000
       max.poll.interval: 300000
-      fetch.min.bytes: 1
+      fetch.min.bytes: 128
       fetch.max.wait.ms: 5000
       value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
   producer:
