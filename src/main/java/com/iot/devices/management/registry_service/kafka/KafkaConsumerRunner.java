@@ -57,7 +57,6 @@ public class KafkaConsumerRunner {
                     subscribe();
                 }
                 final ConsumerRecords<String, SpecificRecord> records = kafkaConsumer.poll(Duration.of(consumerProperties.getPollTimeoutMs(), MILLIS));
-//                kafkaConsumer.commitAsync(getOffsetCommitCallback());
                 kpiMetricLogger.recordRecordsInOnePoll(records.count());
                 final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>(partitions.size());
                 for (TopicPartition partition : records.partitions()) {

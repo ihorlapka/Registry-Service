@@ -26,7 +26,6 @@ import org.testcontainers.utility.DockerImageName;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static com.iot.devices.DoorState.OPEN;
@@ -82,7 +81,7 @@ class KafkaConsumerRunnerTest {
     }
 
     @AfterEach
-    void tearDown() throws ExecutionException, InterruptedException {
+    void tearDown() {
         reset(parallelDevicePatcher);
     }
 
