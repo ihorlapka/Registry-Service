@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import static java.time.OffsetDateTime.now;
 import static java.util.Optional.ofNullable;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class UserService {
 
@@ -32,15 +34,18 @@ public class UserService {
         return usersRepository.findByEmail(email);
     }
 
+    @Transactional
     public User save(CreateUserRequest request) {
         final User userEntity = mapNewUser(request);
         return usersRepository.save(userEntity);
     }
 
+    @Transactional
     public User save(User user) {
         return usersRepository.save(user);
     }
 
+    @Transactional
     public User patch(PatchUserRequest request, User user) {
         final User patched = patchUser(request,  user);
         return usersRepository.save(patched);
@@ -54,6 +59,7 @@ public class UserService {
         return usersRepository.findAll(pageable);
     }
 
+    @Transactional
     public int removeById(UUID id) {
         return usersRepository.removeById(id);
     }

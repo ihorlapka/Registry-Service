@@ -9,9 +9,6 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLRecoverableException;
 import java.sql.SQLTransientException;
@@ -78,8 +75,7 @@ public class RetriablePatcher {
         }
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
-    public int patchTelemetry(SpecificRecord record) {
+    private int patchTelemetry(SpecificRecord record) {
         return switch (record) {
             case DoorSensor ds -> deviceService.patchDoorSensorTelemetry(mapDoorSensor(ds));
             case EnergyMeter em -> deviceService.patchEnergyMeterTelemetry(mapEnergyMeter(em));

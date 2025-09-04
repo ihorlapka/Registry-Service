@@ -8,9 +8,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -22,12 +19,10 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
     Optional<Device> findBySerialNumber(@NonNull @NotBlank(message = "serial number is required") String serialNumber);
 
     @Modifying
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     @Query("DELETE FROM Device d WHERE d.id = :id")
     int removeById(@NonNull @Param("id") UUID id);
 
     @Modifying
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     @Query(value = """
             UPDATE devices SET
             status = COALESCE(CASE WHEN :status IS NULL THEN NULL ELSE CAST(:status AS VARCHAR) END::device_statuses, status),
@@ -57,7 +52,6 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
                                   @Param("lastOpened") OffsetDateTime lastOpened);
 
     @Modifying
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     @Query(value = """
             UPDATE devices SET
             status = COALESCE(CASE WHEN :status IS NULL THEN NULL ELSE CAST(:status AS VARCHAR) END::device_statuses, status),
@@ -85,7 +79,6 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
                                    @Param("energyConsumed") Float energyConsumed);
 
     @Modifying
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     @Query(value = """
             UPDATE devices SET
             status = COALESCE(CASE WHEN :status IS NULL THEN NULL ELSE CAST(:status AS VARCHAR) END::device_statuses, status),
@@ -115,7 +108,6 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
                                   @Param("powerConsumption") Float powerConsumption);
 
     @Modifying
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     @Query(value = """
             UPDATE devices SET
             status = COALESCE(CASE WHEN :status IS NULL THEN NULL ELSE CAST(:status AS VARCHAR) END::device_statuses, status),
@@ -143,7 +135,6 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
                                  @Param("powerUsage") Float powerUsage);
 
     @Modifying
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     @Query(value = """
             UPDATE devices SET
             status = COALESCE(CASE WHEN :status IS NULL THEN NULL ELSE CAST(:status AS VARCHAR) END::device_statuses, status),
@@ -169,7 +160,6 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
                                           @Param("batteryLevel") Integer batteryLevel);
 
     @Modifying
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     @Query(value = """
             UPDATE devices SET
             status = COALESCE(CASE WHEN :status IS NULL THEN NULL ELSE CAST(:status AS VARCHAR) END::device_statuses, status),
@@ -199,7 +189,6 @@ public interface DevicesRepository extends JpaRepository<Device, UUID> {
                                          @Param("unit") String unit);
 
     @Modifying
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     @Query(value = """
             UPDATE devices SET
             status = COALESCE(CASE WHEN :status IS NULL THEN NULL ELSE CAST(:status AS VARCHAR) END::device_statuses, status),

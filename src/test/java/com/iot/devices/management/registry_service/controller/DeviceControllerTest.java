@@ -101,14 +101,13 @@ class DeviceControllerTest {
     void createDeviceWithUser() throws Exception {
         when(deviceService.findBySerialNumber(any())).thenReturn(Optional.empty());
         when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.of(USER));
-        when(deviceService.save(any(CreateDeviceRequest.class), eq(USER))).thenReturn(DEVICE);
+        when(deviceService.save(any(CreateDeviceRequest.class))).thenReturn(DEVICE);
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isCreated());
         verify(deviceService).findBySerialNumber(serialNumber);
-        verify(userService).findByUserId(UUID.fromString(ownerId));
-        verify(deviceService).save(any(CreateDeviceRequest.class), eq(USER));
+        verify(deviceService).save(any(CreateDeviceRequest.class));
     }
 
     @Test
@@ -148,14 +147,14 @@ class DeviceControllerTest {
                 status, lastActiveAt, firmwareVersion);
         Device device = DEVICE;
         device.setOwner(null);
-        when(deviceService.save(any(CreateDeviceRequest.class), isNull())).thenReturn(device);
+        when(deviceService.save(any(CreateDeviceRequest.class))).thenReturn(device);
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isCreated());
         verify(deviceService).findBySerialNumber(serialNumber);
         verifyNoInteractions(userService);
-        verify(deviceService).save(any(CreateDeviceRequest.class), isNull());
+        verify(deviceService).save(any(CreateDeviceRequest.class));
     }
 
     @Test
@@ -170,13 +169,12 @@ class DeviceControllerTest {
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
         Device patchedDevice = DEVICE;
         patchedDevice.setFirmwareVersion(firmwareVersion);
-        when(deviceService.patch(any(PatchDeviceRequest.class), eq(DEVICE), isNull())).thenReturn(patchedDevice);
+        when(deviceService.patch(any(PatchDeviceRequest.class))).thenReturn(patchedDevice);
         mockMvc.perform(patch("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isOk());
-        verify(deviceService).findByDeviceId(DEVICE.getId());
-        verify(deviceService).patch(any(PatchDeviceRequest.class), eq(patchedDevice), isNull());
+        verify(deviceService).patch(any(PatchDeviceRequest.class));
     }
 
     @Test

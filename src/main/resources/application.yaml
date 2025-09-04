@@ -97,3 +97,9 @@ persister:
   retries:
     max.attempts: 15
     wait.duration.ms: 3000
+#logging:
+#  level:
+#    org.hibernate.SQL: DEBUG
+#    org.hibernate.orm.jdbc.bind: TRACE
+#    org.springframework.transaction: DEBUG
+#    org.springframework.orm.jpa: DEBUG

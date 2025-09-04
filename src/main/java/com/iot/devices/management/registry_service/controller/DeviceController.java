@@ -3,15 +3,12 @@ package com.iot.devices.management.registry_service.controller;
 import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateDeviceRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
-import com.iot.devices.management.registry_service.controller.errors.UserExceptions.UserNotFoundException;
 import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.CreateDeviceOpenApi;
 import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.GetDeviceByIdOpenApi;
 import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.RemoveDeviceByIdOpenApi;
 import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.UpdateDeviceOpenApi;
 import com.iot.devices.management.registry_service.persistence.model.Device;
-import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
-import com.iot.devices.management.registry_service.persistence.services.UserService;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -38,7 +34,6 @@ import static com.iot.devices.management.registry_service.controller.errors.Devi
 public class DeviceController {
 
     private final DeviceService deviceService;
-    private final UserService userService;
 
     @PostMapping
     @CreateDeviceOpenApi
@@ -47,8 +42,7 @@ public class DeviceController {
         if (device.isPresent()) {
             throw new DuplicateDeviceException(request.serialNumber());
         }
-        User owner = getUserFromDB(request.ownerId());
-        final Device saved = deviceService.save(request, owner);
+        final Device saved = deviceService.save(request);
         final URI location = getLocation(saved);
         final DeviceDTO deviceDTO = getDeviceInfo(saved);
         return ResponseEntity.created(location).body(deviceDTO);
@@ -57,13 +51,8 @@ public class DeviceController {
     @PatchMapping
     @UpdateDeviceOpenApi
     public ResponseEntity<DeviceDTO> patchDevice(@RequestBody @Valid PatchDeviceRequest request) {
-        final Optional<Device> device = deviceService.findByDeviceId(request.id());
-        if (device.isEmpty()) {
-            throw new DeviceNotFoundException(request.id());
-        }
-        final User user = getUserFromDB(request.ownerId());
-        final Device saved = deviceService.patch(request, device.get(), user);
-        final DeviceDTO deviceDTO = getDeviceInfo(saved);
+        final Device patched = deviceService.patch(request);
+        final DeviceDTO deviceDTO = getDeviceInfo(patched);
         return ResponseEntity.ok(deviceDTO);
     }
 
@@ -89,14 +78,6 @@ public class DeviceController {
 
     public ResponseEntity<DeviceDTO>  rateLimitFallback(UUID deviceId, Throwable t) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
-    }
-
-    private User getUserFromDB(@Nullable UUID userId) {
-        if (userId == null) {
-            return null;
-        }
-        return userService.findByUserId(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     private URI getLocation(Device saved) {
