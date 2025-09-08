@@ -97,6 +97,10 @@ persister:
   retries:
     max.attempts: 15
     wait.duration.ms: 3000
+cache:
+  initial.capacity: 10
+  max.size: 500
+  expiration.time.min: 1
 #logging:
 #  level:
 #    org.hibernate.SQL: DEBUG

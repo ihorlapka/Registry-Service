@@ -90,8 +90,8 @@ public class UserController {
     @RemoveUserByIdOpenApi
     public ResponseEntity<Void> deleteUser(@PathVariable UUID userId) {
         final int removedUser = userService.removeById(userId);
-        if (removedUser < 1) {
-            throw new UserNotFoundException(userId);
+        if (removedUser == 1) {
+            log.info("User with id: {} is removed", userId);
         }
         return ResponseEntity.noContent().build();
     }

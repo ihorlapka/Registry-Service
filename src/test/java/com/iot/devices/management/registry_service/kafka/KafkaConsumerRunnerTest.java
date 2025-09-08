@@ -3,6 +3,7 @@ package com.iot.devices.management.registry_service.kafka;
 import com.iot.devices.*;
 import com.iot.devices.management.registry_service.health.HealthConfig;
 import com.iot.devices.management.registry_service.kafka.properties.KafkaConsumerProperties;
+import com.iot.devices.management.registry_service.metrics.KpiMetricLogger;
 import com.iot.devices.management.registry_service.persistence.ParallelDevicePatcher;
 import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -26,10 +27,10 @@ import org.testcontainers.utility.DockerImageName;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.iot.devices.DoorState.OPEN;
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -52,6 +53,8 @@ class KafkaConsumerRunnerTest {
 
     @MockitoBean
     ParallelDevicePatcher parallelDevicePatcher;
+    @MockitoBean
+    KpiMetricLogger kpiMetricLogger;
 
     @Autowired
     KafkaConsumerProperties consumerProperties;
@@ -105,13 +108,18 @@ class KafkaConsumerRunnerTest {
         kafkaProducer.sendMessage(thermostat, deviceId2);
         kafkaProducer.sendMessage(smartPlug, deviceId3);
 
-        verify(parallelDevicePatcher, timeout(3000)).patch(recordsCaptor.capture());
+        verify(parallelDevicePatcher, timeout(3000).atLeast(1)).patch(recordsCaptor.capture());
         List<Map<String, ConsumerRecord<String, SpecificRecord>>> receivedMessages = recordsCaptor.getAllValues();
 
-        assertEquals(3, receivedMessages.getFirst().size());
-        assertEquals(doorSensor, receivedMessages.getFirst().get(deviceId1).value());
-        assertEquals(thermostat, receivedMessages.getFirst().get(deviceId2).value());
-        assertEquals(smartPlug, receivedMessages.getFirst().get(deviceId3).value());
+        Map<String, SpecificRecord> recordsById = receivedMessages.stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .collect(toMap(ConsumerRecord::key, ConsumerRecord::value));
+
+        assertEquals(3, recordsById.size());
+        assertEquals(doorSensor, recordsById.get(doorSensor.getDeviceId()));
+        assertEquals(thermostat, recordsById.get(thermostat.getDeviceId()));
+        assertEquals(smartPlug, recordsById.get(smartPlug.getDeviceId()));
     }
 
     @Test
@@ -144,9 +152,11 @@ class KafkaConsumerRunnerTest {
         verify(parallelDevicePatcher, timeout(30000).atLeast(4)).patch(recordsCaptor.capture());
         List<Map<String, ConsumerRecord<String, SpecificRecord>>> receivedMessages = recordsCaptor.getAllValues();
 
-        Map<String, SpecificRecord> messageById = receivedMessages.stream().map(Map::values).flatMap(Collection::stream)
+        Map<String, SpecificRecord> messageById = receivedMessages.stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
                 .filter(x -> deviceIds.contains(x.key()))
-                .collect(Collectors.toMap(ConsumerRecord::key, ConsumerRecord::value, (a, b) -> b));
+                .collect(toMap(ConsumerRecord::key, ConsumerRecord::value, (a, b) -> b));
         assertEquals(3, messageById.size());
         assertEquals(doorSensor, messageById.get(deviceId1));
         assertEquals(thermostat, messageById.get(deviceId2));

@@ -1,5 +1,6 @@
 package com.iot.devices.management.registry_service.persistence.services;
 
+import com.iot.devices.management.registry_service.controller.errors.UserExceptions.UserNotFoundException;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
@@ -9,6 +10,10 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,6 +23,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.iot.devices.management.registry_service.cache.CacheConfig.USERS_CACHE;
 import static java.time.OffsetDateTime.now;
 import static java.util.Optional.ofNullable;
 
@@ -28,6 +34,7 @@ public class UserService {
 
     private final UsersRepository usersRepository;
 
+    @Cacheable(USERS_CACHE)
     public Optional<User> findByEmail(@NonNull @NotBlank
                                       @Email(message = "Email must be valid")
                                       String email) {
@@ -46,11 +53,16 @@ public class UserService {
     }
 
     @Transactional
+    @Caching(put = {
+            @CachePut(value = USERS_CACHE, key = "#user.getId()"),
+            @CachePut(value = USERS_CACHE, key = "#user.getEmail()")
+    })
     public User patch(PatchUserRequest request, User user) {
         final User patched = patchUser(request,  user);
         return usersRepository.save(patched);
     }
 
+    @Cacheable(USERS_CACHE)
     public Optional<User> findByUserId(@NonNull UUID id) {
         return usersRepository.findById(id);
     }
@@ -61,7 +73,20 @@ public class UserService {
 
     @Transactional
     public int removeById(UUID id) {
-        return usersRepository.removeById(id);
+        final Optional<User> user = usersRepository.findById(id);
+        if (user.isPresent()) {
+            int removed = usersRepository.removeById(id);
+            evictUserCache(user.get().getId(), user.get().getEmail());
+            return removed;
+        }
+        throw new UserNotFoundException(id);
+    }
+
+    @Caching(evict = {
+            @CacheEvict(value = "usersCache", key = "#id"),
+            @CacheEvict(value = "usersCache", key = "#email")
+    })
+    private void evictUserCache(UUID id, String email) {
     }
 
     private User mapNewUser(CreateUserRequest request) {
