@@ -54,8 +54,8 @@ public class UserService {
 
     @Transactional
     @Caching(put = {
-            @CachePut(value = USERS_CACHE, key = "#user.getId()"),
-            @CachePut(value = USERS_CACHE, key = "#user.getEmail()")
+            @CachePut(value = USERS_CACHE, key = "#user.id"),
+            @CachePut(value = USERS_CACHE, key = "#user.email")
     })
     public User patch(PatchUserRequest request, User user) {
         final User patched = patchUser(request,  user);
