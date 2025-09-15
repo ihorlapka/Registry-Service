@@ -34,7 +34,7 @@ public class UserService {
 
     private final UsersRepository usersRepository;
 
-    @Cacheable(USERS_CACHE)
+    @Cacheable(value = USERS_CACHE, sync = true)
     public Optional<User> findByEmail(@NonNull @NotBlank
                                       @Email(message = "Email must be valid")
                                       String email) {
@@ -62,7 +62,7 @@ public class UserService {
         return usersRepository.save(patched);
     }
 
-    @Cacheable(USERS_CACHE)
+    @Cacheable(value = USERS_CACHE, sync = true)
     public Optional<User> findByUserId(@NonNull UUID id) {
         return usersRepository.findById(id);
     }
