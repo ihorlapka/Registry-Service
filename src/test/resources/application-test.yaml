@@ -83,6 +83,7 @@ kafka:
       schema.registry.url: mock://my-scope:8081
 parallel.patcher:
   threads.amount: 10
+  threads.virtual: true
   executor.termination.time.ms: 5000
 logging:
   level:

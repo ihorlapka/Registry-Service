@@ -34,9 +34,10 @@ public class ParallelDevicePatcher {
     private final KpiMetricLogger kpiMetricLogger;
 
     public ParallelDevicePatcher(@Value("${" + PROPERTIES_PREFIX + ".threads.amount}") int threadsAmount,
+                                 @Value("${" + PROPERTIES_PREFIX + ".threads.virtual}") boolean useVirtualThreads,
                                  @Value("${" + PROPERTIES_PREFIX + ".executor.termination.time.ms}") int executorTerminationTimeMs,
                                  DeadLetterProducer deadLetterProducer, RetriablePatcher retriablePatcher, KpiMetricLogger kpiMetricLogger) {
-        this.executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadsAmount);
+        this.executorService = (ThreadPoolExecutor) createExecutorService(threadsAmount, useVirtualThreads);
         this.executorTerminationTimeMs = executorTerminationTimeMs;
         this.deadLetterProducer = deadLetterProducer;
         this.retriablePatcher = retriablePatcher;
@@ -72,6 +73,10 @@ public class ParallelDevicePatcher {
         kpiMetricLogger.recordActiveThreadsInParallelPatcher(executorService.getActiveCount());
         CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
         return offsetsToCommit.stream().max(comparingLong(OffsetAndMetadata::offset));
+    }
+
+    private ExecutorService createExecutorService(int threadsAmount, boolean useVirtualThreads) {
+        return (useVirtualThreads) ?Executors.newVirtualThreadPerTaskExecutor() : Executors.newFixedThreadPool(threadsAmount);
     }
 
     private List<ConsumerRecord<String, SpecificRecord>> sortRecordsByOffsets(Map<String, ConsumerRecord<String, SpecificRecord>> recordById) {

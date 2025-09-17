@@ -92,6 +92,7 @@ kafka:
       client.id: dead-letter-updates-producer
 parallel.patcher:
   threads.amount: 10
+  threads.virtual: true
   executor.termination.time.ms: 5000
 persister:
   retries:
