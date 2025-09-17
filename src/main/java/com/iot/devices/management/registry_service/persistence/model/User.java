@@ -16,7 +16,13 @@ import static jakarta.persistence.GenerationType.*;
 @Getter
 @Setter
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "users_username_key", columnList = "username"),
+                @Index(name = "users_email_key", columnList = "email")
+        }
+)
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

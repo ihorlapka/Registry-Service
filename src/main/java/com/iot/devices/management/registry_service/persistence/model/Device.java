@@ -17,7 +17,12 @@ import static jakarta.persistence.GenerationType.AUTO;
 @Getter
 @Setter
 @Entity
-@Table(name = "devices")
+@Table(
+        name = "devices",
+        indexes = {
+                @Index(name = "devices_serial_number_key", columnList = "serial_number")
+        }
+)
 @ToString(exclude = "owner")
 @NoArgsConstructor
 @AllArgsConstructor
