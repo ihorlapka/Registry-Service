@@ -16,6 +16,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,12 +34,17 @@ import static java.util.Optional.ofNullable;
 public class UserService {
 
     private final UsersRepository usersRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Cacheable(value = USERS_CACHE, sync = true)
     public Optional<User> findByEmail(@NonNull @NotBlank
                                       @Email(message = "Email must be valid")
                                       String email) {
         return usersRepository.findByEmail(email);
+    }
+
+    public Optional<User> findByUsername(@NonNull @NotBlank String username) {
+        return usersRepository.findByUsername(username);
     }
 
     @Transactional
@@ -92,7 +98,7 @@ public class UserService {
     private User mapNewUser(CreateUserRequest request) {
         UserRole userRole = ofNullable(request.userRole()).orElse(UserRole.USER);
         return new User(null, request.username(), request.firstName(), request.lastName(),
-                request.email(), request.phone(), request.address(), request.passwordHash(),
+                request.email(), request.phone(), request.address(), passwordEncoder.encode(request.password()),
                 userRole, now(), now(), now(), new HashSet<>());
     }
 
@@ -103,7 +109,7 @@ public class UserService {
         ofNullable(request.email()).ifPresent(user::setEmail);
         ofNullable(request.phone()).ifPresent(user::setPhone);
         ofNullable(request.address()).ifPresent(user::setAddress);
-        ofNullable(request.passwordHash()).ifPresent(user::setPasswordHash);
+        ofNullable(request.password()).ifPresent(passwordEncoder::encode);
         ofNullable(request.userRole()).ifPresent(user::setUserRole);
         user.setUpdatedAt(now());
         return user;

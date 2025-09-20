@@ -27,21 +27,23 @@ public class ParallelDevicePatcher {
 
     private static final String PROPERTIES_PREFIX = "parallel.patcher";
 
-    private final ThreadPoolExecutor executorService;
+    private final ExecutorService executorService;
     private final int executorTerminationTimeMs;
     private final DeadLetterProducer deadLetterProducer;
     private final RetriablePatcher retriablePatcher;
     private final KpiMetricLogger kpiMetricLogger;
+    private final boolean useVirtualThreads;
 
     public ParallelDevicePatcher(@Value("${" + PROPERTIES_PREFIX + ".threads.amount}") int threadsAmount,
                                  @Value("${" + PROPERTIES_PREFIX + ".threads.virtual}") boolean useVirtualThreads,
                                  @Value("${" + PROPERTIES_PREFIX + ".executor.termination.time.ms}") int executorTerminationTimeMs,
                                  DeadLetterProducer deadLetterProducer, RetriablePatcher retriablePatcher, KpiMetricLogger kpiMetricLogger) {
-        this.executorService = (ThreadPoolExecutor) createExecutorService(threadsAmount, useVirtualThreads);
+        this.executorService = createExecutorService(threadsAmount, useVirtualThreads);
         this.executorTerminationTimeMs = executorTerminationTimeMs;
         this.deadLetterProducer = deadLetterProducer;
         this.retriablePatcher = retriablePatcher;
         this.kpiMetricLogger = kpiMetricLogger;
+        this.useVirtualThreads = useVirtualThreads;
     }
 
 
@@ -70,13 +72,15 @@ public class ParallelDevicePatcher {
                 }
             }, executorService));
         }
-        kpiMetricLogger.recordActiveThreadsInParallelPatcher(executorService.getActiveCount());
+        if (!useVirtualThreads) {
+            kpiMetricLogger.recordActiveThreadsInParallelPatcher(((ThreadPoolExecutor) executorService).getActiveCount());
+        }
         CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
         return offsetsToCommit.stream().max(comparingLong(OffsetAndMetadata::offset));
     }
 
     private ExecutorService createExecutorService(int threadsAmount, boolean useVirtualThreads) {
-        return (useVirtualThreads) ?Executors.newVirtualThreadPerTaskExecutor() : Executors.newFixedThreadPool(threadsAmount);
+        return (useVirtualThreads) ? Executors.newVirtualThreadPerTaskExecutor() : Executors.newFixedThreadPool(threadsAmount);
     }
 
     private List<ConsumerRecord<String, SpecificRecord>> sortRecordsByOffsets(Map<String, ConsumerRecord<String, SpecificRecord>> recordById) {

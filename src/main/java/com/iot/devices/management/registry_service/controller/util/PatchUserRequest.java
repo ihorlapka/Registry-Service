@@ -15,6 +15,6 @@ public record PatchUserRequest(
         @Nullable @Email String email,
         @Nullable String phone,
         @Nullable String address,
-        @Nullable String passwordHash,
+        @Nullable String password,
         @Nullable UserRole userRole) {
 }

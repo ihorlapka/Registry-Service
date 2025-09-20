@@ -5,11 +5,12 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static jakarta.persistence.GenerationType.*;
 
@@ -26,7 +27,7 @@ import static jakarta.persistence.GenerationType.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = AUTO)
@@ -52,7 +53,7 @@ public class User {
     private String address;
 
     @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
+    private String password;
 
     @Column(name = "user_role", columnDefinition = "user_roles", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -74,4 +75,9 @@ public class User {
             orphanRemoval = true)
     private Set<Device> devices = new HashSet<>();
 
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(userRole.name()));
+    }
 }

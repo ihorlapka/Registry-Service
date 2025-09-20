@@ -16,6 +16,7 @@ import java.util.UUID;
 public interface UsersRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(@NonNull @Email String email);
+    Optional<User> findByUsername(@NonNull String username);
 
     @Modifying
     @Query("DELETE FROM User u WHERE u.id = :id")

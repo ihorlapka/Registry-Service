@@ -1,12 +1,15 @@
 package com.iot.devices.management.registry_service.controller;
 
 import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
+import com.iot.devices.management.registry_service.controller.util.AuthenticationRequest;
+import com.iot.devices.management.registry_service.controller.util.AuthenticationResponse;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.open.api.custom.annotations.users.*;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
+import com.iot.devices.management.registry_service.security.JwtService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -15,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -36,8 +41,24 @@ import static java.util.stream.Collectors.toSet;
 public class UserController {
 
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    @PostMapping
+    @PostMapping("/authenticate")
+    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody @Valid AuthenticationRequest request) {
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                request.username(), request.password()));
+        log.info("user {} is authenticated", request.username());
+        final Optional<User> user = userService.findByUsername(request.username());
+        if (user.isEmpty()) {
+            throw new UserNotFoundException(request.username());
+        }
+        return ResponseEntity.ok(AuthenticationResponse.builder()
+                .token(jwtService.generateToken(user.get()))
+                .build());
+    }
+
+    @PostMapping("/register")
     @CreateUserOpenApi
     public ResponseEntity<UserDTO> createUser(@RequestBody @Valid CreateUserRequest request) {
         final Optional<User> user = userService.findByEmail(request.email());

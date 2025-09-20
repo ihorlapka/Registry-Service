@@ -36,8 +36,8 @@ public record CreateUserRequest(
         String address,
 
         @NonNull
-        @NotBlank(message = "PasswordHash is required")
-        String passwordHash,
+        @NotBlank(message = "Password is required")
+        String password,
 
         UserRole userRole
         ) {
