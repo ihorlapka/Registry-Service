@@ -11,6 +11,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static com.iot.devices.management.registry_service.persistence.model.enums.UserRole.*;
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
+
 @EnableWebSecurity
 @Configuration
 @RequiredArgsConstructor
@@ -23,7 +27,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/v1/users/**")
+                        .requestMatchers(POST,"/api/v1/authentication/login").permitAll()
+                        .requestMatchers(POST,"/api/v1/users/registerUser").permitAll()
+                        .requestMatchers(POST,"/api/v1/users/registerAdmin").hasRole(SUPER_ADMIN.name())
+                        .requestMatchers(GET,"/api/v1/users/all").hasAnyRole(ADMIN.name(), SUPER_ADMIN.name())
+                        .requestMatchers(GET,"/api/v1/users/me").hasAnyRole(USER.name(), ADMIN.name(), SUPER_ADMIN.name())
+                        .requestMatchers(GET,"/api/v1/users/username/*").hasAnyRole(ADMIN.name(), SUPER_ADMIN.name())
+                        .requestMatchers(GET,"/api/v1/users/email/*").hasAnyRole(ADMIN.name(), SUPER_ADMIN.name())
+                        .requestMatchers(GET,"/api/v1/users/*").hasAnyRole(ADMIN.name(), SUPER_ADMIN.name())
+                        .requestMatchers("/api/v1/users/**").hasAnyRole(USER.name(), ADMIN.name(), SUPER_ADMIN.name())
+                        .requestMatchers("/api/v1/devices/**").hasAnyRole(USER.name(), ADMIN.name(), SUPER_ADMIN.name())
+                        .anyRequest()
                         .authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

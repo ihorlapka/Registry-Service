@@ -1,5 +1,6 @@
 package com.iot.devices.management.registry_service.controller;
 
+import com.google.common.collect.ImmutableSet;
 import com.iot.devices.management.registry_service.controller.errors.ErrorHandler;
 import com.iot.devices.management.registry_service.controller.util.CreateDeviceRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
@@ -11,16 +12,21 @@ import com.iot.devices.management.registry_service.persistence.model.enums.Devic
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
+import com.iot.devices.management.registry_service.security.AppConfig;
+import com.iot.devices.management.registry_service.security.JwtAuthentificationFilter;
+import com.iot.devices.management.registry_service.security.JwtService;
+import com.iot.devices.management.registry_service.security.SecurityConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,6 +43,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {
         DeviceController.class,
         ErrorHandler.class
+})
+@Import({
+        JwtService.class,
+        SecurityConfig.class,
+        AppConfig.class,
+        JwtAuthentificationFilter.class
 })
 class DeviceControllerTest {
 
@@ -82,56 +94,107 @@ class DeviceControllerTest {
             model, deviceType, location, latitude, longitude, ownerId,
             status, lastActiveAt, firmwareVersion);
 
-    User USER = new User(UUID.fromString("9369f52f-e0d4-4695-a8f2-bd1eb77a221f"),
-            "username", "firstName", "lastName",
-            "some_email@gmail.com", "+3801234456", null,
-            "6576887654", UserRole.USER, now(), now(), now(), new HashSet<>());
-
     Device DEVICE = new Device(UUID.randomUUID(), name, serialNumber,
             DeviceManufacturer.valueOf(manufacturer), model, DeviceType.valueOf(deviceType),
-            location, new BigDecimal(latitude), new BigDecimal(longitude), USER,
+            location, new BigDecimal(latitude), new BigDecimal(longitude), null,
             DeviceStatus.valueOf(status), now(), firmwareVersion, now(), now(), "{}");
+
+    User USER = new User(UUID.fromString(ownerId),
+            "some_username", "firstName", "lastName",
+            "some_email@gmail.com", "+3801234456", null,
+            "6576887654", UserRole.USER, now(), now(), now(), ImmutableSet.of(DEVICE));
+
 
     @AfterEach
     void tearDown() {
         verifyNoMoreInteractions(userService, deviceService);
     }
 
+    @WithMockUser(username = "some_username", roles = "USER")
     @Test
     void createDeviceWithUser() throws Exception {
         when(deviceService.findBySerialNumber(any())).thenReturn(Optional.empty());
         when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.of(USER));
-        when(deviceService.save(any(CreateDeviceRequest.class))).thenReturn(DEVICE);
+        when(deviceService.save(any(CreateDeviceRequest.class), any(User.class))).thenReturn(DEVICE);
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isCreated());
         verify(deviceService).findBySerialNumber(serialNumber);
-        verify(deviceService).save(any(CreateDeviceRequest.class));
+        verify(deviceService).save(any(CreateDeviceRequest.class), any(User.class));
+        verify(userService).findByUserId(USER.getId());
     }
 
+    @WithMockUser(username = "some_username", roles = "USER")
     @Test
-    void createDuplicateDevice() throws Exception {
+    void createDeviceWithoutUser() throws Exception {
+        when(deviceService.findBySerialNumber(any())).thenReturn(Optional.empty());
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.empty());
+        when(deviceService.save(any(CreateDeviceRequest.class), isNull())).thenReturn(DEVICE);
+        mockMvc.perform(post("/api/v1/devices")
+                        .contentType(APPLICATION_JSON)
+                        .content(filledJson))
+                .andExpect(status().isForbidden());
+        verify(userService).findByUserId(USER.getId());
+    }
+
+    @WithMockUser(username = "some_username", roles = "ADMIN")
+    @Test
+    void createDeviceWithoutUserAdmin() throws Exception {
+        when(deviceService.findBySerialNumber(any())).thenReturn(Optional.empty());
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.empty());
+        when(deviceService.save(any(CreateDeviceRequest.class), isNull())).thenReturn(DEVICE);
+        mockMvc.perform(post("/api/v1/devices")
+                        .contentType(APPLICATION_JSON)
+                        .content(filledJson))
+                .andExpect(status().isCreated());
+        verify(deviceService).findBySerialNumber(serialNumber);
+        verify(deviceService).save(any(CreateDeviceRequest.class), isNull());
+        verify(userService).findByUserId(USER.getId());
+    }
+
+    @WithMockUser(username = "some_username", roles = "ADMIN")
+    @Test
+    void createDuplicateDeviceWithoutUserAdmin() throws Exception {
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.empty());
         when(deviceService.findBySerialNumber(any())).thenReturn(Optional.of(DEVICE));
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isConflict());
         verify(deviceService).findBySerialNumber(serialNumber);
+        verify(userService).findByUserId(USER.getId());
     }
 
+    @WithMockUser(username = "some_username", roles = "USER")
+    @Test
+    void createDuplicateDevice() throws Exception {
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.of(USER));
+        when(deviceService.findBySerialNumber(any())).thenReturn(Optional.of(DEVICE));
+        mockMvc.perform(post("/api/v1/devices")
+                        .contentType(APPLICATION_JSON)
+                        .content(filledJson))
+                .andExpect(status().isConflict());
+        verify(deviceService).findBySerialNumber(serialNumber);
+        verify(userService).findByUserId(USER.getId());
+    }
+
+    @WithMockUser(username = "some_username", roles = "USER")
     @Test
     void createDeviceDbIsDown() throws Exception {
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.of(USER));
         when(deviceService.findBySerialNumber(any())).thenThrow(new DataAccessResourceFailureException("Db is down!"));
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isInternalServerError());
         verify(deviceService).findBySerialNumber(serialNumber);
+        verify(userService).findByUserId(USER.getId());
     }
 
+    @WithMockUser(username = "some_username", roles = "ADMIN")
     @Test
-    void createDeviceWithoutUser() throws Exception {
+    void createDeviceWithoutUserInRequest() throws Exception {
         String filledJson = """
                 {
                   "name": "%s",
@@ -147,38 +210,93 @@ class DeviceControllerTest {
                 status, lastActiveAt, firmwareVersion);
         Device device = DEVICE;
         device.setOwner(null);
-        when(deviceService.save(any(CreateDeviceRequest.class))).thenReturn(device);
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.empty());
+        when(deviceService.save(any(CreateDeviceRequest.class), isNull())).thenReturn(device);
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isCreated());
         verify(deviceService).findBySerialNumber(serialNumber);
+        verify(deviceService).save(any(CreateDeviceRequest.class), isNull());
         verifyNoInteractions(userService);
-        verify(deviceService).save(any(CreateDeviceRequest.class));
     }
 
+    @WithMockUser(username = "some_username", roles = "USER")
     @Test
     void patchDevice() throws Exception {
         String firmwareVersion = "1.58.5v";
         String filledJson = """
                 {
                   "id": "%s",
-                  "firmwareVersion": "%s"
+                  "firmwareVersion": "%s",
+                  "ownerId": "%s"
                 }
-                """.formatted(DEVICE.getId(), firmwareVersion);
+                """.formatted(DEVICE.getId(), firmwareVersion, ownerId);
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.of(USER));
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
         Device patchedDevice = DEVICE;
         patchedDevice.setFirmwareVersion(firmwareVersion);
-        when(deviceService.patch(any(PatchDeviceRequest.class))).thenReturn(patchedDevice);
+        when(deviceService.patch(any(PatchDeviceRequest.class), any(User.class))).thenReturn(patchedDevice);
         mockMvc.perform(patch("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isOk());
-        verify(deviceService).patch(any(PatchDeviceRequest.class));
+        verify(deviceService).patch(any(PatchDeviceRequest.class), any(User.class));
+        verify(userService).findByUserId(USER.getId());
     }
 
+    @WithMockUser(username = "some_username", roles = "ADMIN")
+    @Test
+    void patchDeviceAdmin() throws Exception {
+        String firmwareVersion = "1.58.5v";
+        String filledJson = """
+                {
+                  "id": "%s",
+                  "firmwareVersion": "%s",
+                  "ownerId": "%s"
+                }
+                """.formatted(DEVICE.getId(), firmwareVersion, ownerId);
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.of(USER));
+        when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
+        Device patchedDevice = DEVICE;
+        patchedDevice.setFirmwareVersion(firmwareVersion);
+        when(deviceService.patch(any(PatchDeviceRequest.class), any(User.class))).thenReturn(patchedDevice);
+        mockMvc.perform(patch("/api/v1/devices")
+                        .contentType(APPLICATION_JSON)
+                        .content(filledJson))
+                .andExpect(status().isOk());
+        verify(deviceService).patch(any(PatchDeviceRequest.class), any(User.class));
+        verify(userService).findByUserId(USER.getId());
+    }
+
+    @WithMockUser(username = "some_username", roles = "ADMIN")
+    @Test
+    void patchDeviceWithoutUser() throws Exception {
+        String firmwareVersion = "1.58.5v";
+        String filledJson = """
+                {
+                  "id": "%s",
+                  "firmwareVersion": "%s",
+                  "ownerId": "%s"
+                }
+                """.formatted(DEVICE.getId(), firmwareVersion, ownerId);
+        when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.empty());
+        when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
+        Device patchedDevice = DEVICE;
+        patchedDevice.setFirmwareVersion(firmwareVersion);
+        when(deviceService.patch(any(PatchDeviceRequest.class), isNull())).thenReturn(patchedDevice);
+        mockMvc.perform(patch("/api/v1/devices")
+                        .contentType(APPLICATION_JSON)
+                        .content(filledJson))
+                .andExpect(status().isOk());
+        verify(deviceService).patch(any(PatchDeviceRequest.class), isNull());
+        verify(userService).findByUserId(USER.getId());
+    }
+
+    @WithMockUser(username = "some_username", roles = "USER")
     @Test
     void getDevice() throws Exception {
+        DEVICE.setOwner(USER);
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
         mockMvc.perform(get("/api/v1/devices/" + DEVICE.getId())
                         .contentType(APPLICATION_JSON))
@@ -186,12 +304,38 @@ class DeviceControllerTest {
         verify(deviceService).findByDeviceId(any());
     }
 
+    @WithMockUser(username = "some_username", roles = "ADMIN")
+    @Test
+    void getDeviceAdmin() throws Exception {
+        when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
+        mockMvc.perform(get("/api/v1/devices/" + DEVICE.getId())
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk());
+        verify(deviceService).findByDeviceId(any());
+    }
+
+    @WithMockUser(username = "some_username", roles = "USER")
     @Test
     void deleteDevice() throws Exception {
+        DEVICE.setOwner(USER);
+        when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
         when(deviceService.removeById(any())).thenReturn(1);
         mockMvc.perform(delete("/api/v1/devices/" + DEVICE.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isNoContent());
         verify(deviceService).removeById(any());
+        verify(deviceService).findByDeviceId(any());
+    }
+
+    @WithMockUser(username = "some_username", roles = "ADMIN")
+    @Test
+    void deleteDeviceAdmin() throws Exception {
+        when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
+        when(deviceService.removeById(any())).thenReturn(1);
+        mockMvc.perform(delete("/api/v1/devices/" + DEVICE.getId())
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+        verify(deviceService).removeById(any());
+        verify(deviceService).findByDeviceId(any());
     }
 }

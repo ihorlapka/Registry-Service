@@ -1,6 +1,6 @@
 package com.iot.devices.management.registry_service.security;
 
-import com.iot.devices.management.registry_service.persistence.repos.UsersRepository;
+import com.iot.devices.management.registry_service.persistence.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class AppConfig {
 
     @Bean
-    public UserDetailsService userDetailsService(UsersRepository usersRepository) {
-        return username -> usersRepository.findByUsername(username)
+    public UserDetailsService userDetailsService(UserService userService) {
+        return username -> userService.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("No such user"));
     }
 

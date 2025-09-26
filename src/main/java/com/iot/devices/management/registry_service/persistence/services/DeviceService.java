@@ -7,7 +7,6 @@ import com.iot.devices.management.registry_service.mapping.*;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.repos.DevicesRepository;
-import com.iot.devices.management.registry_service.controller.errors.UserExceptions.UserNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.NonNull;
@@ -32,75 +31,25 @@ import static java.util.Optional.ofNullable;
 public class DeviceService {
 
     private final DevicesRepository devicesRepository;
-    private final UserService userService;
-
-    public Optional<Device> findBySerialNumber(@NonNull @NotBlank(message = "serial number is required") String serialNumber) {
-        return devicesRepository.findBySerialNumber(serialNumber);
-    }
 
     @Transactional
-    public Device save(@Valid CreateDeviceRequest request) {
-        final User owner = getUserFromDB(request.ownerId());
-        final Device newDevice = mapNewDevice(request, owner);
-        return devicesRepository.save(newDevice);
+    public Device save(@Valid CreateDeviceRequest request, @Nullable User owner) {
+        return devicesRepository.save(mapNewDevice(request, owner));
     }
 
-    public Optional<Device> findByDeviceId(@NonNull @NotBlank(message = "device id is required") UUID id) {
-        return devicesRepository.findById(id);
+    //dirty checking
+    @Transactional
+    public Device patch(@Valid PatchDeviceRequest request, User user) {
+        final Optional<Device> device = devicesRepository.findById(request.id());
+        if (device.isEmpty()) {
+            throw new DeviceNotFoundException(request.id());
+        }
+        return patchDevice(request, device.get(), user);
     }
 
     @Transactional
     public int removeById(@NonNull UUID deviceId) {
         return devicesRepository.removeById(deviceId);
-    }
-
-    private Device mapNewDevice(CreateDeviceRequest request, User owner) {
-        return new Device(null, request.name(), request.serialNumber(),
-                request.deviceManufacturer(), request.model(), request.deviceType(),
-                request.location(), request.latitude(), request.longitude(), owner,
-                request.status(), request.lastActiveAt(), request.firmwareVersion(),
-                now(), now(), null);
-    }
-
-    //dirty checking
-    @Transactional
-    public Device patch(@Valid PatchDeviceRequest request) {
-        final Optional<Device> device = devicesRepository.findById(request.id());
-        if (device.isEmpty()) {
-            throw new DeviceNotFoundException(request.id());
-        }
-        final User user = getUserFromDB(request.ownerId());
-        return patchDevice(request, device.get(), user);
-    }
-
-    private User getUserFromDB(@Nullable UUID userId) {
-        if (userId == null) {
-            return null;
-        }
-        return userService.findByUserId(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
-    }
-
-    private Device patchDevice(PatchDeviceRequest request, Device device, User user) {
-        ofNullable(request.name()).ifPresent(device::setName);
-        ofNullable(request.model()).ifPresent(device::setModel);
-        ofNullable(request.deviceType()).ifPresent(device::setDeviceType);
-        ofNullable(request.location()).ifPresent(device::setLocation);
-        ofNullable(request.latitude()).ifPresent(device::setLatitude);
-        ofNullable(request.longitude()).ifPresent(device::setLongitude);
-        ofNullable(user).ifPresent(device::setOwner);
-        ofNullable(request.status()).ifPresent(device::setStatus);
-        ofNullable(request.lastActiveAt()).ifPresent(device::setLastActiveAt);
-        ofNullable(request.firmwareVersion()).ifPresent(device::setFirmwareVersion);
-        device.setUpdatedAt(now());
-        return device;
-    }
-
-    private static OffsetDateTime getLastActiveAt(@Nullable String status, OffsetDateTime lastUpdated) {
-        if (status == null) {
-            return null;
-        }
-        return status.equals(ONLINE.name()) ? lastUpdated : null;
     }
 
     @Transactional
@@ -152,7 +101,45 @@ public class DeviceService {
                 t.getCurrentTemperature(), t.getTargetTemperature(), t.getHumidity(), t.getMode());
     }
 
-    private static void logDebug(Object o) {
+    public Optional<Device> findBySerialNumber(@NonNull @NotBlank(message = "serial number is required") String serialNumber) {
+        return devicesRepository.findBySerialNumber(serialNumber);
+    }
+
+    public Optional<Device> findByDeviceId(@NonNull @NotBlank(message = "device id is required") UUID id) {
+        return devicesRepository.findById(id);
+    }
+
+    private Device mapNewDevice(CreateDeviceRequest request, @Nullable User owner) {
+        return new Device(null, request.name(), request.serialNumber(),
+                request.deviceManufacturer(), request.model(), request.deviceType(),
+                request.location(), request.latitude(), request.longitude(), owner,
+                request.status(), request.lastActiveAt(), request.firmwareVersion(),
+                now(), now(), null);
+    }
+
+    private Device patchDevice(PatchDeviceRequest request, Device device, @Nullable User user) {
+        ofNullable(request.name()).ifPresent(device::setName);
+        ofNullable(request.model()).ifPresent(device::setModel);
+        ofNullable(request.deviceType()).ifPresent(device::setDeviceType);
+        ofNullable(request.location()).ifPresent(device::setLocation);
+        ofNullable(request.latitude()).ifPresent(device::setLatitude);
+        ofNullable(request.longitude()).ifPresent(device::setLongitude);
+        ofNullable(user).ifPresent(device::setOwner);
+        ofNullable(request.status()).ifPresent(device::setStatus);
+        ofNullable(request.lastActiveAt()).ifPresent(device::setLastActiveAt);
+        ofNullable(request.firmwareVersion()).ifPresent(device::setFirmwareVersion);
+        device.setUpdatedAt(now());
+        return device;
+    }
+
+    private static OffsetDateTime getLastActiveAt(@Nullable String status, OffsetDateTime lastUpdated) {
+        if (status == null) {
+            return null;
+        }
+        return status.equals(ONLINE.name()) ? lastUpdated : null;
+    }
+
+    private void logDebug(Object o) {
         log.debug("Patching: {}", o);
     }
 }

@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public record PatchUserRequest(
         @NonNull UUID id,
-        @Nullable String username,
+        @NonNull String username,
         @Nullable String firstName,
         @Nullable String lastName,
         @Nullable @Email String email,

@@ -1,16 +1,13 @@
 package com.iot.devices.management.registry_service.controller;
 
-import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
-import com.iot.devices.management.registry_service.controller.util.AuthenticationRequest;
-import com.iot.devices.management.registry_service.controller.util.AuthenticationResponse;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
+import com.iot.devices.management.registry_service.controller.util.Utils;
 import com.iot.devices.management.registry_service.open.api.custom.annotations.users.*;
 import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
-import com.iot.devices.management.registry_service.security.JwtService;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,77 +15,74 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
 import com.iot.devices.management.registry_service.controller.errors.UserExceptions.*;
 
-import static java.util.stream.Collectors.toSet;
+import java.util.*;
+
+import static com.iot.devices.management.registry_service.controller.util.Utils.*;
+import static com.iot.devices.management.registry_service.persistence.model.enums.UserRole.*;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "Users", description = "CRUD operations for users")
-public class UserController {
+public class UserController { //TODO: add openApi!
 
     private final UserService userService;
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
 
-    @PostMapping("/authenticate")
-    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody @Valid AuthenticationRequest request) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                request.username(), request.password()));
-        log.info("user {} is authenticated", request.username());
-        final Optional<User> user = userService.findByUsername(request.username());
-        if (user.isEmpty()) {
-            throw new UserNotFoundException(request.username());
-        }
-        return ResponseEntity.ok(AuthenticationResponse.builder()
-                .token(jwtService.generateToken(user.get()))
-                .build());
-    }
-
-    @PostMapping("/register")
+    @PostMapping("/registerUser")
     @CreateUserOpenApi
     public ResponseEntity<UserDTO> createUser(@RequestBody @Valid CreateUserRequest request) {
+        return registerUser(request, USER);
+    }
+
+    @PostMapping("/registerAdmin")
+    @CreateAdminOpenApi
+    public ResponseEntity<UserDTO> createAdmin(@RequestBody @Valid CreateUserRequest request) {
+        return registerUser(request, ADMIN);
+    }
+
+    private ResponseEntity<UserDTO> registerUser(CreateUserRequest request, UserRole role) {
         final Optional<User> user = userService.findByEmail(request.email());
         if (user.isPresent()) {
             throw new DuplicateUserException(request.email());
         }
-        final User saved = userService.save(request);
-        final URI location = getLocation(saved);
-        final UserDTO userDTO = getUserInfo(saved);
-        return ResponseEntity.created(location).body(userDTO);
+        final User saved = userService.save(request, role);
+        return ResponseEntity.created(getLocation(saved.getId())).body(getUserInfo(saved));
     }
 
     @PatchMapping
     @UpdateUserOpenApi
-    public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request) {
+    public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request, Authentication auth) {
+        if (!isAdmin(auth) && !request.username().equals(auth.getName())) {
+            return ResponseEntity.status(FORBIDDEN).build();
+        }
         final Optional<User> user = userService.findByUserId(request.id());
         if (user.isEmpty()) {
             throw new UserNotFoundException(request.id());
         }
         final User saved = userService.patch(request, user.get());
-        final UserDTO userDTO = getUserInfo(saved);
-        return ResponseEntity.ok(userDTO);
+        return ResponseEntity.ok(getUserInfo(saved));
     }
 
-    @GetMapping
-    @Hidden
+    @GetMapping("/all")
     public ResponseEntity<List<UserDTO>> getAllUsers(Pageable pageable) {
         final Page<User> users = userService.findAll(pageable);
-        final List<UserDTO> userDTOS = users.stream().map(this::getUserInfo).toList();
+        final List<UserDTO> userDTOS = users.stream().map(Utils::getUserInfo).toList();
         return ResponseEntity.ok(userDTOS);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getMyUser(Authentication auth) {
+        final Optional<User> user = userService.findByUsername(auth.getName());
+        if (user.isEmpty()) {
+            throw new UserNotFoundException(auth.getName());
+        }
+        return ResponseEntity.ok(getUserInfo(user.get()));
     }
 
     @GetMapping("{userId}")
@@ -97,6 +91,13 @@ public class UserController {
         final Optional<User> user = userService.findByUserId(userId);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
                 .orElseThrow(() -> new UserNotFoundException(userId));
+    }
+
+    @GetMapping("/username/{username}")
+    public ResponseEntity<UserDTO> getUserByUsername(@PathVariable String username) {
+        final Optional<User> user = userService.findByUsername(username);
+        return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
+                .orElseThrow(() -> new UserNotFoundException(username));
     }
 
     @GetMapping("email/{email}")
@@ -109,7 +110,14 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     @RemoveUserByIdOpenApi
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID userId) {
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID userId, Authentication auth) {
+        final Optional<User> user = userService.findByUserId(userId);
+        if (!isAdmin(auth) && !isTheSameUser(auth, user)) {
+            return ResponseEntity.status(FORBIDDEN).build();
+        }
+        if (user.isEmpty()) {
+            throw new UserNotFoundException(userId);
+        }
         final int removedUser = userService.removeById(userId);
         if (removedUser == 1) {
             log.info("User with id: {} is removed", userId);
@@ -117,26 +125,8 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    private URI getLocation(User saved) {
-        return ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(saved.getId())
-                .toUri();
-    }
-
-    private UserDTO getUserInfo(User saved) {
-        return new UserDTO(saved.getId(), saved.getUsername(), saved.getFirstName(), saved.getLastName(),
-                saved.getPhone(), saved.getEmail(), saved.getAddress(), mapDevices(saved));
-    }
-
-    private static Set<DeviceDTO> mapDevices(User saved) {
-        return saved.getDevices().stream()
-                .map(device -> new DeviceDTO(device.getId(),
-                        device.getName(), device.getSerialNumber(),
-                        device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
-                        device.getLocation(), device.getLatitude(), device.getLongitude(),
-                        device.getOwner().getId(), device.getStatus(), device.getLastActiveAt(),
-                        device.getFirmwareVersion(), device.getCreatedAt(), device.getUpdatedAt()))
-                .collect(toSet());
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static Boolean isTheSameUser(Authentication auth, Optional<User> user) {
+        return user.map(u -> u.getUsername().equals(auth.getName())).orElse(false);
     }
 }

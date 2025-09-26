@@ -6,13 +6,19 @@ import com.iot.devices.management.registry_service.controller.util.PatchUserRequ
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
+import com.iot.devices.management.registry_service.security.AppConfig;
+import com.iot.devices.management.registry_service.security.JwtAuthentificationFilter;
+import com.iot.devices.management.registry_service.security.JwtService;
+import com.iot.devices.management.registry_service.security.SecurityConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,6 +41,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         UserController.class,
         ErrorHandler.class
 })
+@Import({
+        JwtService.class,
+        SecurityConfig.class,
+        AppConfig.class,
+        JwtAuthentificationFilter.class
+})
 class UserControllerTest {
 
     @Autowired
@@ -51,7 +63,6 @@ class UserControllerTest {
     String email = "someemail@gmail.com";
     String address = "St. Privet";
     String passwordHash = "jwheknrmlear";
-    String userRole = "USER";
 
     String json = """
             {
@@ -61,10 +72,9 @@ class UserControllerTest {
               "phone"    : "%s",
               "email"    : "%s",
               "address"  : "%s",
-              "passwordHash"  : "%s",
-              "userRole"  : "%s"
+              "password"  : "%s"
             }
-            """.formatted(username, firstName, lastName, phone, email, address, passwordHash, userRole);
+            """.formatted(username, firstName, lastName, phone, email, address, passwordHash);
 
 
     UUID USER_ID = UUID.randomUUID();
@@ -78,19 +88,19 @@ class UserControllerTest {
 
     @Test
     void createUser() throws Exception {
-        when(userService.save(any(CreateUserRequest.class))).thenReturn(USER);
-        mockMvc.perform(post("/api/v1/users")
+        when(userService.save(any(CreateUserRequest.class), eq(UserRole.USER))).thenReturn(USER);
+        mockMvc.perform(post("/api/v1/users/registerUser")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated());
         verify(userService).findByEmail(email);
-        verify(userService).save(any(CreateUserRequest.class));
+        verify(userService).save(any(CreateUserRequest.class), eq(UserRole.USER));
     }
 
     @Test
     void duplicatedUser() throws Exception {
         when(userService.findByEmail(email)).thenReturn(Optional.of(USER));
-        mockMvc.perform(post("/api/v1/users")
+        mockMvc.perform(post("/api/v1/users/registerUser")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isConflict());
@@ -98,10 +108,32 @@ class UserControllerTest {
         verifyNoMoreInteractions(userService);
     }
 
+    @WithMockUser(roles = {"ADMIN"}, username = "test")
+    @Test
+    void createAdminForbidden() throws Exception {
+        when(userService.save(any(CreateUserRequest.class), eq(UserRole.ADMIN))).thenReturn(USER);
+        mockMvc.perform(post("/api/v1/users/registerAdmin")
+                        .contentType(APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isForbidden());
+    }
+
+    @WithMockUser(roles = {"SUPER_ADMIN"}, username = "test")
+    @Test
+    void createAdmin() throws Exception {
+        when(userService.save(any(CreateUserRequest.class), eq(UserRole.ADMIN))).thenReturn(USER);
+        mockMvc.perform(post("/api/v1/users/registerAdmin")
+                        .contentType(APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated());
+        verify(userService).findByEmail(email);
+        verify(userService).save(any(CreateUserRequest.class), eq(UserRole.ADMIN));
+    }
+
     @Test
     void dbIsDown() throws Exception {
         when(userService.findByEmail(email)).thenThrow(new DataAccessResourceFailureException("Db is down!"));
-        mockMvc.perform(post("/api/v1/users")
+        mockMvc.perform(post("/api/v1/users/registerUser")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isInternalServerError());
@@ -109,15 +141,17 @@ class UserControllerTest {
         verifyNoMoreInteractions(userService);
     }
 
+    @WithMockUser(username = "jonndoe123")
     @Test
     void patchUser() throws Exception {
         String patchedAddress = "some updated address";
         String patch = """
             {
               "id": "%s",
+              "username": "%s",
               "address"  : "%s"
             }
-            """.formatted(USER_ID, patchedAddress);
+            """.formatted(USER_ID, username, patchedAddress);
         when(userService.findByUserId(USER_ID)).thenReturn(Optional.of(USER));
         USER.setAddress(patchedAddress);
         when(userService.patch(any(PatchUserRequest.class), any(User.class))).thenReturn(USER);
@@ -130,15 +164,17 @@ class UserControllerTest {
         verifyNoMoreInteractions(userService);
     }
 
+    @WithMockUser(username = "jonndoe123")
     @Test
     void patchNoUserFound() throws Exception {
         String patchedAddress = "some updated address";
         String patch = """
             {
               "id": "%s",
+              "username": "%s",
               "address"  : "%s"
             }
-            """.formatted(USER_ID, patchedAddress);
+            """.formatted(USER_ID, username, patchedAddress);
         when(userService.findByUserId(USER_ID)).thenReturn(Optional.empty());
         mockMvc.perform(patch("/api/v1/users")
                         .contentType(APPLICATION_JSON)
@@ -148,16 +184,37 @@ class UserControllerTest {
         verifyNoMoreInteractions(userService);
     }
 
+    @WithMockUser(roles = {"ADMIN", "SUPER_ADMIN"})
     @Test
     void getAllUsers() throws Exception {
         when(userService.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(listOf(USER)));
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/all")
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
         verify(userService).findAll(any(Pageable.class));
         verifyNoMoreInteractions(userService);
     }
 
+    @WithMockUser(roles = "USER", username = "jonndoe123")
+    @Test
+    void getAllUsersUnauthorized() throws Exception {
+        when(userService.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(listOf(USER)));
+        mockMvc.perform(get("/api/v1/users/all")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+        verifyNoMoreInteractions(userService);
+    }
+
+    @WithMockUser(roles = "USER", username = "jonndoe123")
+    @Test
+    void getUserByIdUnauthorized() throws Exception {
+        when(userService.findByUserId(any())).thenReturn(Optional.of(USER));
+        mockMvc.perform(get("/api/v1/users/" + USER_ID)
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @WithMockUser(roles = "ADMIN", username = "jonndoe123")
     @Test
     void getUserById() throws Exception {
         when(userService.findByUserId(any())).thenReturn(Optional.of(USER));
@@ -168,6 +225,40 @@ class UserControllerTest {
         verifyNoMoreInteractions(userService);
     }
 
+    @WithMockUser(roles = "SUPER_ADMIN", username = "jonndoe123")
+    @Test
+    void getUserByIdSuperadmin() throws Exception {
+        when(userService.findByUserId(any())).thenReturn(Optional.of(USER));
+        mockMvc.perform(get("/api/v1/users/" + USER_ID)
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk());
+        verify(userService).findByUserId(any());
+        verifyNoMoreInteractions(userService);
+    }
+
+    @WithMockUser(roles = "ADMIN", username = "jonndoe123")
+    @Test
+    void getUserByUsername() throws Exception {
+        when(userService.findByUsername(any())).thenReturn(Optional.of(USER));
+        mockMvc.perform(get("/api/v1/users/username/" + username)
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk());
+        verify(userService).findByUsername(any());
+        verifyNoMoreInteractions(userService);
+    }
+
+    @WithMockUser(roles = "USER", username = "jonndoe123")
+    @Test
+    void getMe() throws Exception {
+        when(userService.findByUsername(any())).thenReturn(Optional.of(USER));
+        mockMvc.perform(get("/api/v1/users/me")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk());
+        verify(userService).findByUsername(any());
+        verifyNoMoreInteractions(userService);
+    }
+
+    @WithMockUser(roles = "ADMIN", username = "jonndoe123")
     @Test
     void findByEmail() throws Exception {
         when(userService.findByEmail(email)).thenReturn(Optional.of(USER));
@@ -178,12 +269,15 @@ class UserControllerTest {
         verifyNoMoreInteractions(userService);
     }
 
+    @WithMockUser(roles = "USER", username = "jonndoe123")
     @Test
     void deleteUser() throws Exception {
+        when(userService.findByUserId(any())).thenReturn(Optional.of(USER));
         when(userService.removeById(any())).thenReturn(1);
         mockMvc.perform(delete("/api/v1/users/" + USER_ID)
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isNoContent());
+        verify(userService).findByUserId(any());
         verify(userService).removeById(any());
         verifyNoMoreInteractions(userService);
     }

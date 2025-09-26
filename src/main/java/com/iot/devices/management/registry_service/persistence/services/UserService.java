@@ -48,8 +48,8 @@ public class UserService {
     }
 
     @Transactional
-    public User save(CreateUserRequest request) {
-        final User userEntity = mapNewUser(request);
+    public User save(CreateUserRequest request, UserRole role) {
+        final User userEntity = mapNewUser(request, role);
         return usersRepository.save(userEntity);
     }
 
@@ -95,8 +95,8 @@ public class UserService {
     private void evictUserCache(UUID id, String email) {
     }
 
-    private User mapNewUser(CreateUserRequest request) {
-        UserRole userRole = ofNullable(request.userRole()).orElse(UserRole.USER);
+    private User mapNewUser(CreateUserRequest request, UserRole role) {
+        UserRole userRole = ofNullable(role).orElse(UserRole.USER);
         return new User(null, request.username(), request.firstName(), request.lastName(),
                 request.email(), request.phone(), request.address(), passwordEncoder.encode(request.password()),
                 userRole, now(), now(), now(), new HashSet<>());

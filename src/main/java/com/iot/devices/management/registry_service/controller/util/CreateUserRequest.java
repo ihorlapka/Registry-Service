@@ -1,6 +1,5 @@
 package com.iot.devices.management.registry_service.controller.util;
 
-import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -37,8 +36,6 @@ public record CreateUserRequest(
 
         @NonNull
         @NotBlank(message = "Password is required")
-        String password,
-
-        UserRole userRole
+        String password
         ) {
 }

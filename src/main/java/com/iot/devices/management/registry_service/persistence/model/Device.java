@@ -62,7 +62,7 @@ public class Device {
     private BigDecimal longitude;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_user_id", nullable = false)
+    @JoinColumn(name = "owner_user_id")
     private User owner;
 
     @Column(name = "status", columnDefinition = "device_statuses", nullable = false)
