@@ -70,6 +70,7 @@ public class UserController { //TODO: add openApi!
     }
 
     @GetMapping("/all")
+    @GetAllUsersOpenApi
     public ResponseEntity<List<UserDTO>> getAllUsers(Pageable pageable) {
         final Page<User> users = userService.findAll(pageable);
         final List<UserDTO> userDTOS = users.stream().map(Utils::getUserInfo).toList();
@@ -77,6 +78,7 @@ public class UserController { //TODO: add openApi!
     }
 
     @GetMapping("/me")
+    @GetMyUserOpenApi
     public ResponseEntity<UserDTO> getMyUser(Authentication auth) {
         final Optional<User> user = userService.findByUsername(auth.getName());
         if (user.isEmpty()) {
@@ -94,6 +96,7 @@ public class UserController { //TODO: add openApi!
     }
 
     @GetMapping("/username/{username}")
+    @GetUserByUsernameOpenApi
     public ResponseEntity<UserDTO> getUserByUsername(@PathVariable String username) {
         final Optional<User> user = userService.findByUsername(username);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
