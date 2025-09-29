@@ -10,12 +10,10 @@ import com.iot.devices.management.registry_service.persistence.model.enums.Devic
 import com.iot.devices.management.registry_service.persistence.model.enums.DeviceStatus;
 import com.iot.devices.management.registry_service.persistence.model.enums.DeviceType;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
+import com.iot.devices.management.registry_service.persistence.repos.TokenRepository;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
-import com.iot.devices.management.registry_service.security.AppConfig;
-import com.iot.devices.management.registry_service.security.JwtAuthentificationFilter;
-import com.iot.devices.management.registry_service.security.JwtService;
-import com.iot.devices.management.registry_service.security.SecurityConfig;
+import com.iot.devices.management.registry_service.security.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +23,7 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -48,7 +47,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         JwtService.class,
         SecurityConfig.class,
         AppConfig.class,
-        JwtAuthentificationFilter.class
+        JwtAuthentificationFilter.class,
+        SecurityProperties.class,
+        LogoutService.class
 })
 class DeviceControllerTest {
 
@@ -59,6 +60,8 @@ class DeviceControllerTest {
     DeviceService deviceService;
     @MockitoBean
     UserService userService;
+    @MockitoBean
+    TokenRepository tokenRepository;
 
     String name = "Living Room Temperature Sensor";
     String serialNumber = "SN-8754-XYZ";
@@ -102,12 +105,12 @@ class DeviceControllerTest {
     User USER = new User(UUID.fromString(ownerId),
             "some_username", "firstName", "lastName",
             "some_email@gmail.com", "+3801234456", null,
-            "6576887654", UserRole.USER, now(), now(), now(), ImmutableSet.of(DEVICE));
+            "6576887654", UserRole.USER, now(), now(), now(), ImmutableSet.of(DEVICE), ImmutableList.of());
 
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(userService, deviceService);
+        verifyNoMoreInteractions(userService, deviceService, tokenRepository);
     }
 
     @WithMockUser(username = "some_username", roles = "USER")

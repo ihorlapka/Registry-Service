@@ -75,6 +75,11 @@ public class User implements UserDetails {
             orphanRemoval = true)
     private Set<Device> devices = new HashSet<>();
 
+    @OneToMany(mappedBy = "user",
+            cascade = CascadeType.REMOVE,
+            fetch = FetchType.LAZY)
+    private List<Token> tokens = new ArrayList<>();
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

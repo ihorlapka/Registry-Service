@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "Users", description = "CRUD operations for users")
-public class UserController { //TODO: add openApi!
+public class UserController {
 
     private final UserService userService;
 
@@ -61,9 +61,9 @@ public class UserController { //TODO: add openApi!
         if (!isAdmin(auth) && !request.username().equals(auth.getName())) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
-        final Optional<User> user = userService.findByUserId(request.id());
+        final Optional<User> user = userService.findByUsername(request.username());
         if (user.isEmpty()) {
-            throw new UserNotFoundException(request.id());
+            throw new UserNotFoundException(request.username());
         }
         final User saved = userService.patch(request, user.get());
         return ResponseEntity.ok(getUserInfo(saved));

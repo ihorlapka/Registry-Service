@@ -8,8 +8,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 import static com.iot.devices.management.registry_service.persistence.model.enums.UserRole.*;
 import static org.springframework.http.HttpMethod.GET;
@@ -22,12 +24,13 @@ public class SecurityConfig {
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthentificationFilter jwtAuthFilter;
+    private final LogoutHandler logoutHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers(POST,"/api/v1/authentication/login").permitAll()
+                        .requestMatchers(POST,"/api/v1/authentication/**").permitAll()
                         .requestMatchers(POST,"/api/v1/users/registerUser").permitAll()
                         .requestMatchers(POST,"/api/v1/users/registerAdmin").hasRole(SUPER_ADMIN.name())
                         .requestMatchers(GET,"/api/v1/users/all").hasAnyRole(ADMIN.name(), SUPER_ADMIN.name())
@@ -43,6 +46,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .logout(logout ->
+                        logout.logoutUrl("/api/v1/authentication/logout")
+                                .addLogoutHandler(logoutHandler)
+                                .logoutSuccessHandler((req, resp, auth) -> SecurityContextHolder.clearContext())
+                )
                 .build();
     }
 }

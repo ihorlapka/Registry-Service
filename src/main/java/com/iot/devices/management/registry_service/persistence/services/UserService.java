@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -20,14 +21,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.iot.devices.management.registry_service.cache.CacheConfig.USERS_CACHE;
 import static java.time.OffsetDateTime.now;
 import static java.util.Optional.ofNullable;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -64,7 +65,7 @@ public class UserService {
             @CachePut(value = USERS_CACHE, key = "#user.email")
     })
     public User patch(PatchUserRequest request, User user) {
-        final User patched = patchUser(request,  user);
+        final User patched = patchUser(request, user);
         return usersRepository.save(patched);
     }
 
@@ -99,19 +100,35 @@ public class UserService {
         UserRole userRole = ofNullable(role).orElse(UserRole.USER);
         return new User(null, request.username(), request.firstName(), request.lastName(),
                 request.email(), request.phone(), request.address(), passwordEncoder.encode(request.password()),
-                userRole, now(), now(), now(), new HashSet<>());
+                userRole, now(), now(), now(), new HashSet<>(), new ArrayList<>());
     }
 
     private User patchUser(PatchUserRequest request, User user) {
-        ofNullable(request.username()).ifPresent(user::setUsername);
+        ofNullable(request.newUsername()).ifPresent(user::setUsername);
         ofNullable(request.firstName()).ifPresent(user::setFirstName);
         ofNullable(request.lastName()).ifPresent(user::setLastName);
         ofNullable(request.email()).ifPresent(user::setEmail);
         ofNullable(request.phone()).ifPresent(user::setPhone);
         ofNullable(request.address()).ifPresent(user::setAddress);
-        ofNullable(request.password()).ifPresent(passwordEncoder::encode);
+        ofNullable(request.newPassword()).ifPresent(pass -> changePassword(request, user));
         ofNullable(request.userRole()).ifPresent(user::setUserRole);
         user.setUpdatedAt(now());
         return user;
+    }
+
+    private void changePassword(PatchUserRequest request, User user) {
+        checkArgument(request.password() != null);
+        checkArgument(request.confirmationPassword() != null);
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new IllegalStateException("Current password is wrong");
+        }
+        if (!Objects.equals(request.newPassword(), request.confirmationPassword())) {
+            throw new IllegalStateException("Password are not the same");
+        }
+        final String encodedPassword = passwordEncoder.encode(request.newPassword());
+        if (Objects.equals(encodedPassword, user.getPassword())) {
+            throw new IllegalArgumentException("New password can not be the same as current one");
+        }
+        user.setPassword(encodedPassword);
     }
 }

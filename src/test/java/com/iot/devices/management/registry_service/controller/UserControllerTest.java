@@ -5,11 +5,9 @@ import com.iot.devices.management.registry_service.controller.util.CreateUserReq
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
+import com.iot.devices.management.registry_service.persistence.repos.TokenRepository;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
-import com.iot.devices.management.registry_service.security.AppConfig;
-import com.iot.devices.management.registry_service.security.JwtAuthentificationFilter;
-import com.iot.devices.management.registry_service.security.JwtService;
-import com.iot.devices.management.registry_service.security.SecurityConfig;
+import com.iot.devices.management.registry_service.security.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +20,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +44,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         JwtService.class,
         SecurityConfig.class,
         AppConfig.class,
-        JwtAuthentificationFilter.class
+        JwtAuthentificationFilter.class,
+        SecurityProperties.class,
+        LogoutService.class
 })
 class UserControllerTest {
 
@@ -54,6 +55,8 @@ class UserControllerTest {
 
     @MockitoBean
     UserService userService;
+    @MockitoBean
+    TokenRepository tokenRepository;
 
 
     String username = "jonndoe123";
@@ -79,11 +82,11 @@ class UserControllerTest {
 
     UUID USER_ID = UUID.randomUUID();
     User USER = new User(USER_ID, username, firstName, lastName, email, phone, address, passwordHash,
-            UserRole.USER, now(), now(), now(), new HashSet<>());
+            UserRole.USER, now(), now(), now(), new HashSet<>(), new ArrayList<>());
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(userService);
+        verifyNoMoreInteractions(userService, tokenRepository);
     }
 
     @Test
@@ -152,14 +155,14 @@ class UserControllerTest {
               "address"  : "%s"
             }
             """.formatted(USER_ID, username, patchedAddress);
-        when(userService.findByUserId(USER_ID)).thenReturn(Optional.of(USER));
+        when(userService.findByUsername(username)).thenReturn(Optional.of(USER));
         USER.setAddress(patchedAddress);
         when(userService.patch(any(PatchUserRequest.class), any(User.class))).thenReturn(USER);
         mockMvc.perform(patch("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(patch))
                 .andExpect(status().isOk());
-        verify(userService).findByUserId(USER_ID);
+        verify(userService).findByUsername(username);
         verify(userService).patch(any(PatchUserRequest.class), any(User.class));
         verifyNoMoreInteractions(userService);
     }
@@ -175,12 +178,12 @@ class UserControllerTest {
               "address"  : "%s"
             }
             """.formatted(USER_ID, username, patchedAddress);
-        when(userService.findByUserId(USER_ID)).thenReturn(Optional.empty());
+        when(userService.findByUsername(username)).thenReturn(Optional.empty());
         mockMvc.perform(patch("/api/v1/users")
                         .contentType(APPLICATION_JSON)
                         .content(patch))
                 .andExpect(status().isNotFound());
-        verify(userService).findByUserId(USER_ID);
+        verify(userService).findByUsername(username);
         verifyNoMoreInteractions(userService);
     }
 

@@ -1,13 +1,12 @@
 package com.iot.devices.management.registry_service.controller;
 
 import com.iot.devices.management.registry_service.controller.errors.ErrorHandler;
+import com.iot.devices.management.registry_service.persistence.model.Token;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
+import com.iot.devices.management.registry_service.persistence.repos.TokenRepository;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
-import com.iot.devices.management.registry_service.security.AppConfig;
-import com.iot.devices.management.registry_service.security.JwtAuthentificationFilter;
-import com.iot.devices.management.registry_service.security.JwtService;
-import com.iot.devices.management.registry_service.security.SecurityConfig;
+import com.iot.devices.management.registry_service.security.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +17,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,7 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         JwtService.class,
         SecurityConfig.class,
         AppConfig.class,
-        JwtAuthentificationFilter.class
+        JwtAuthentificationFilter.class,
+        SecurityProperties.class,
+        LogoutService.class
 })
 class AuthenticationControllerTest {
 
@@ -49,10 +51,12 @@ class AuthenticationControllerTest {
     UserService userService;
     @MockitoBean
     AuthenticationManager authenticationManager;
+    @MockitoBean
+    TokenRepository tokenRepository;
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(userService);
+        verifyNoMoreInteractions(userService, tokenRepository, authenticationManager);
     }
 
     String username = "jonndoe123";
@@ -65,11 +69,11 @@ class AuthenticationControllerTest {
 
     UUID USER_ID = UUID.randomUUID();
     User USER = new User(USER_ID, username, firstName, lastName, email, phone, address, passwordHash,
-            UserRole.USER, now(), now(), now(), new HashSet<>());
+            UserRole.USER, now(), now(), now(), new HashSet<>(), new ArrayList<>());
 
 
     @Test
-    void login() throws Exception {
+    void loginLogout() throws Exception {
         String json = """
             {
               "username": "%s",
@@ -81,8 +85,14 @@ class AuthenticationControllerTest {
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/authentication/logout")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk());
+
         verify(userService).findByUsername(any());
         verify(authenticationManager).authenticate(any());
+        verify(tokenRepository).save(any(Token.class));
     }
 
     @Test

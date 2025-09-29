@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.sql.SQLRecoverableException;
 import java.sql.SQLTransientException;
+import java.time.Duration;
 
 import static com.iot.devices.management.registry_service.mapping.DeviceParametersMapper.*;
 import static com.iot.devices.management.registry_service.mapping.DeviceParametersMapper.mapSmartPlug;
@@ -36,7 +37,7 @@ public class RetriablePatcher {
         while (currentTry < retryProperties.getMaxAttempts()) {
             try {
                 if (currentTry > 0) {
-                    sleep(retryProperties.getWaitDuration());
+                    sleep(Duration.ofMillis(retryProperties.getWaitDuration()));
                 }
                 persist(record, currentTry + 1);
                 return;

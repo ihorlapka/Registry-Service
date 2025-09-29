@@ -24,14 +24,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.*;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.type.TypeReference;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableSet;
 import org.testcontainers.utility.DockerImageName;
 
@@ -75,6 +78,8 @@ class DeviceServiceTest {
     DeviceService deviceService;
     @Autowired
     EntityManager entityManager;
+    @MockitoBean
+    PasswordEncoder passwordEncoder;
 
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -124,7 +129,7 @@ class DeviceServiceTest {
                 DeviceStatus.valueOf(status), now(), firmwareVersion, now(), now(), "{}");
 
         User USER = new User(null, username, firstName, lastName, email, phone, address, passwordHash,
-                UserRole.USER, now(), now(), now(), ImmutableSet.of(DEVICE));
+                UserRole.USER, now(), now(), now(), ImmutableSet.of(DEVICE), ImmutableList.of());
         DEVICE.setOwner(USER);
         userService.save(USER);
     }

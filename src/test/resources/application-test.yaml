@@ -39,6 +39,11 @@ management:
     web:
       exposure:
         include: "*"
+security:
+  jwt:
+    secret-key: "my-token"
+    expiration: 86400000 # day
+    refresh-token.expiration: 604800000 # week
 resilience4j:
   ratelimiter:
     instances:
@@ -83,7 +88,7 @@ kafka:
       schema.registry.url: mock://my-scope:8081
 parallel.patcher:
   threads.amount: 10
-  threads.virtual: true
+  threads.virtual: false
   executor.termination.time.ms: 5000
 logging:
   level:

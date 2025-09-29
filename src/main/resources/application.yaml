@@ -45,6 +45,11 @@ management:
       enabled: true
   metrics:
     data.repository.autotime.enabled: true
+security:
+  jwt:
+    secret-key: "my-token"
+    expiration: 86400000 # day
+    refresh-token.expiration: 604800000 # week
 resilience4j:
   ratelimiter:
     instances:

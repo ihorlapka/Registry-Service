@@ -113,6 +113,9 @@ class ParallelDevicePatcherTest {
         verify(deviceService).patchDoorSensorTelemetry(any());
         verify(deviceService).patchThermostatTelemetry(any());
         verify(deviceService).patchSmartPlugTelemetry(any());
+        verify(kpiMetricLogger).recordDeviceUpdatingTime(eq(Thermostat.class.getSimpleName()), anyLong());
+        verify(kpiMetricLogger).recordDeviceUpdatingTime(eq(DoorSensor.class.getSimpleName()), anyLong());
+        verify(kpiMetricLogger).recordDeviceUpdatingTime(eq(SmartPlug.class.getSimpleName()), anyLong());
         verify(kpiMetricLogger).recordActiveThreadsInParallelPatcher(3);
         verify(kpiMetricLogger, times(3)).recordDeviceUpdatingTime(anyString(), anyLong());
     }
@@ -181,6 +184,9 @@ class ParallelDevicePatcherTest {
         verify(deviceService, times(2)).patchDoorSensorTelemetry(any());
         verify(deviceService, times(2)).patchThermostatTelemetry(any());
         verify(deviceService, times(2)).patchSmartPlugTelemetry(any());
+        verify(kpiMetricLogger, times(2)).recordDeviceUpdatingTime(eq(Thermostat.class.getSimpleName()), anyLong());
+        verify(kpiMetricLogger, times(2)).recordDeviceUpdatingTime(eq(DoorSensor.class.getSimpleName()), anyLong());
+        verify(kpiMetricLogger, times(2)).recordDeviceUpdatingTime(eq(SmartPlug.class.getSimpleName()), anyLong());
         verify(kpiMetricLogger, times(3)).recordActiveThreadsInParallelPatcher(anyInt());
         verify(kpiMetricLogger, times(6)).recordDeviceUpdatingTime(anyString(), anyLong());
     }
