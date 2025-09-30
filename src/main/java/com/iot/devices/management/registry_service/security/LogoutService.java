@@ -26,18 +26,24 @@ public class LogoutService implements LogoutHandler {
 
     @Transactional
     @Override
-    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) { //todo: verify if dirty checking works
+    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
         final String authHeader = request.getHeader(AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
+            log.warn("Unable to logout authorization header not provided or invalid token");
             return;
         }
         final String jwt = authHeader.substring(TOKEN_BEGIN_INDEX);
         final Optional<Token> tokenOptional = tokenRepository.findByToken(jwt);
         if (tokenOptional.isPresent()) {
             Token token = tokenOptional.get();
+            if (token.isExpired() && token.isRevoked()) {
+                log.info("Token is already expired and revoked, token: {}", jwt);
+                return;
+            }
             token.setExpired(true);
             token.setRevoked(true);
             SecurityContextHolder.clearContext();
+            log.info("Logout successful username: {}", token.getUser().getUsername());
         } else {
             log.warn("Unable to find token: {}", jwt);
         }

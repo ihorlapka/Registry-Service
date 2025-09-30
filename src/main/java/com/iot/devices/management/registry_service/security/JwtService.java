@@ -36,7 +36,7 @@ public class JwtService {
 
 
     @Transactional
-    public String saveToken(User user) {
+    public String generateAndSaveToken(User user) {
         final String token = generateToken(user);
         tokenRepository.save(Token.builder()
                 .user(user)
@@ -53,7 +53,7 @@ public class JwtService {
                                                OutputStream outputStream) throws IOException {
         if (isTokenValid(refreshToken, user)) {
             revokeAllUserTokens(user);
-            final String accessToken = saveToken(user);
+            final String accessToken = generateAndSaveToken(user);
             AuthenticationResponse authResponse = AuthenticationResponse.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
