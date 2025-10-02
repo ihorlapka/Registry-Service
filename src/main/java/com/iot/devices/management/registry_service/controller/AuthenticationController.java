@@ -42,16 +42,13 @@ public class AuthenticationController { //todo: add open api!
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody @Valid AuthenticationRequest request) {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+            log.info("user: {} is authenticated", request.username());
             final Optional<User> user = userService.findByUsername(request.username());
             if (user.isEmpty()) {
                 throw new UserNotFoundException(request.username());
             }
-            final String accessToken = jwtService.generateAndSaveToken(user.get());
-            log.info("user: {} is authenticated, token: {}", request.username(), accessToken);
-            return ResponseEntity.ok(AuthenticationResponse.builder()
-                    .accessToken(accessToken)
-                    .refreshToken(jwtService.generateRefreshToken(user.get()))
-                    .build());
+            final AuthenticationResponse authenticationResponse = jwtService.generateTokens(user.get());
+            return ResponseEntity.ok(authenticationResponse);
         } catch (AuthenticationException e) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
@@ -70,7 +67,6 @@ public class AuthenticationController { //todo: add open api!
             throw new UserNotFoundException(username);
         }
         final AuthenticationResponse authenticationResponse = jwtService.refreshToken(refreshToken, user.get(), response.getOutputStream());
-        log.info("Token for user: {} is authenticated, token: {}", username, refreshToken);
         return ResponseEntity.ok(authenticationResponse);
     }
 }

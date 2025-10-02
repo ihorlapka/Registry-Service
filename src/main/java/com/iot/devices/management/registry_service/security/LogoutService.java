@@ -23,6 +23,7 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 public class LogoutService implements LogoutHandler {
 
     private final TokenRepository tokenRepository;
+    private final JwtService jwtService;
 
     @Transactional
     @Override
@@ -33,19 +34,19 @@ public class LogoutService implements LogoutHandler {
             return;
         }
         final String jwt = authHeader.substring(TOKEN_BEGIN_INDEX);
-        final Optional<Token> tokenOptional = tokenRepository.findByToken(jwt);
-        if (tokenOptional.isPresent()) {
-            Token token = tokenOptional.get();
-            if (token.isExpired() && token.isRevoked()) {
-                log.info("Token is already expired and revoked, token: {}", jwt);
+        final String username = jwtService.extractUsername(jwt);
+        final Optional<Token> token = tokenRepository.findByToken(jwt);
+        if (token.isPresent()) {
+            if (token.get().isExpired() || token.get().isRevoked()) {
+                log.info("Token is already expired or has been revoked {}", jwt);
                 return;
             }
-            token.setExpired(true);
-            token.setRevoked(true);
             SecurityContextHolder.clearContext();
-            log.info("Logout successful username: {}", token.getUser().getUsername());
+            log.info("Logout successful username: {}", username);
+            final int rows = tokenRepository.removeAllByUserId(token.get().getUser().getId());
+            log.info("{} tokens were removed for username: {}", rows, username);
         } else {
-            log.warn("Unable to find token: {}", jwt);
+            log.warn("Unable to find token in db for username: {}, token: {}", username, jwt);
         }
     }
 }

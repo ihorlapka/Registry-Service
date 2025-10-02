@@ -34,44 +34,59 @@ public class JwtService {
     private final TokenRepository tokenRepository;
     private final SecurityProperties securityProperties;
 
-
     @Transactional
-    public String generateAndSaveToken(User user) {
-        final String token = generateToken(user);
-        tokenRepository.save(Token.builder()
-                .user(user)
-                .token(token)
-                .expired(false)
-                .revoked(false)
-                .build());
-        log.info("Token for userId: {} is saved {}", user.getId(), token);
-        return token;
+    public AuthenticationResponse generateTokens(User user) {
+        final String accessToken = generateToken(user);
+        final String refreshToken = generateRefreshToken(user);
+        final List<Token> tokens = List.of(buildTokenEntity(user, accessToken, false),
+                buildTokenEntity(user, refreshToken, true));
+        List<Token> savedTokens = tokenRepository.saveAll(tokens);
+        log.info("Tokens for userId: {}, were saved {}", user.getId(), savedTokens);
+        return AuthenticationResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     @Transactional
-    public AuthenticationResponse refreshToken(String refreshToken, User user,
+    public AuthenticationResponse refreshToken(String currentRefreshToken, User user,
                                                OutputStream outputStream) throws IOException {
-        if (isTokenValid(refreshToken, user)) {
+        if (isTokenValid(currentRefreshToken, user)) {
             revokeAllUserTokens(user);
-            final String accessToken = generateAndSaveToken(user);
+            final String accessToken = generateToken(user);
+            final String newRefreshToken = buildToken(new HashMap<>(), user, extractExpiration(currentRefreshToken));
+            final List<Token> tokens = List.of(buildTokenEntity(user, accessToken, false),
+                    buildTokenEntity(user, newRefreshToken, true));
+            List<Token> savedTokens = tokenRepository.saveAll(tokens);
+            log.info("Tokens for userId: {}, were refreshed {}", user.getId(), savedTokens);
             AuthenticationResponse authResponse = AuthenticationResponse.builder()
                     .accessToken(accessToken)
-                    .refreshToken(refreshToken)
+                    .refreshToken(newRefreshToken)
                     .build();
             OBJECT_MAPPER.writeValue(outputStream, authResponse);
             return authResponse;
         } else {
-            log.warn("Token is not valid {}", refreshToken);
+            log.warn("Token is not valid {}", currentRefreshToken);
         }
-        throw new IllegalArgumentException("Invalid token " + refreshToken);
+        throw new IllegalArgumentException("Invalid token " + currentRefreshToken);
+    }
+
+    private Token buildTokenEntity(User user, String token, boolean isRefresh) {
+        return Token.builder()
+                .user(user)
+                .token(token)
+                .expired(false)
+                .revoked(false)
+                .refresh(isRefresh)
+                .build();
     }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(new HashMap<>(), userDetails, securityProperties.getRefreshExpiration());
+    private long extractExpiration(String currentRefreshToken) {
+        return extractClaim(currentRefreshToken, Claims::getExpiration).getTime();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
@@ -102,6 +117,10 @@ public class JwtService {
 
     private String generateToken(Map<String, Object> claimsToAdd, UserDetails userDetails) {
         return buildToken(claimsToAdd, userDetails, securityProperties.getJwtExpiration());
+    }
+
+    private String generateRefreshToken(UserDetails userDetails) {
+        return buildToken(new HashMap<>(), userDetails, securityProperties.getRefreshExpiration());
     }
 
     private String buildToken(Map<String, Object> claimsToAdd, UserDetails userDetails, long expiration) {

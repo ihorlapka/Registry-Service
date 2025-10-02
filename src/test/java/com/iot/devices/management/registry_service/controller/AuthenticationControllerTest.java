@@ -12,10 +12,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AccountExpiredException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,6 +29,7 @@ import static java.time.OffsetDateTime.now;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.verify;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -59,7 +63,7 @@ class AuthenticationControllerTest {
         verifyNoMoreInteractions(userService, tokenRepository, authenticationManager);
     }
 
-    String username = "jonndoe123";
+    String username = "testUser";
     String firstName = "John";
     String lastName = "Doe";
     String phone = "+12345678";
@@ -80,19 +84,29 @@ class AuthenticationControllerTest {
               "password"  : "%s"
             }
             """.formatted(username, passwordHash);
+
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        String jwt = "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0ZXN0VXNlciIsImlhdCI6MTc1OTM5NTEwNCwiZXhwIjoxNzU5NDgxNTA0fQ.wON4LoIDM9GpZI33JSnBIeT8CsAtNHvqHysLyWoz7KGlk6jGlmvHpKvM0uCY5pJx";
+        headers.add(AUTHORIZATION, jwt);
+
         when(userService.findByUsername(username)).thenReturn(Optional.of(USER));
+        when(tokenRepository.findByToken(anyString())).thenReturn(Optional.of(Token.builder().token(jwt).user(USER).revoked(false).expired(false).refresh(false).build()));
+        when(tokenRepository.removeAllByUserId(any())).thenReturn(2);
         mockMvc.perform(post("/api/v1/authentication/login")
                         .contentType(APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/v1/authentication/logout")
-                        .contentType(APPLICATION_JSON))
+                        .contentType(APPLICATION_JSON)
+                        .headers(HttpHeaders.readOnlyHttpHeaders(headers)))
                 .andExpect(status().isOk());
 
         verify(userService).findByUsername(any());
         verify(authenticationManager).authenticate(any());
-        verify(tokenRepository).save(any(Token.class));
+        verify(tokenRepository).findByToken(anyString());
+        verify(tokenRepository).saveAll(anyList());
+        verify(tokenRepository).removeAllByUserId(any());
     }
 
     @Test

@@ -25,8 +25,10 @@ public class SecurityProperties {
 
     @Value("${" + PROPERTIES_PREFIX + ".secret-key}")
     private String secretKey;
+
     @Value("${" + PROPERTIES_PREFIX + ".expiration}")
     private long jwtExpiration;
+
     @Value("${" + PROPERTIES_PREFIX + ".refresh-token.expiration}")
     private long refreshExpiration;
 
