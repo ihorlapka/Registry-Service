@@ -91,7 +91,7 @@ public class JwtService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token, username);
     }
 
     private void revokeAllUserTokens(User user) {
@@ -133,8 +133,12 @@ public class JwtService {
                 .compact();
     }
 
-    private boolean isTokenExpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
+    private boolean isTokenExpired(String token, String username) {
+        boolean isExpired = extractClaim(token, Claims::getExpiration).before(new Date());
+        if (isExpired) {
+            log.info("Token is expired username: {}, token: {}", username, token);
+        }
+        return isExpired;
     }
 
     private Claims extractAllClaims(String token) {

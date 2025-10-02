@@ -43,7 +43,7 @@ public class JwtAuthentificationFilter extends OncePerRequestFilter {
         }
         final String authHeader = request.getHeader(AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
-            log.info("No authorization header is present in request or token is invalid");
+            log.debug("No authorization header is present in request, path={}", request.getServletPath());
             filterChain.doFilter(request, response);
             return;
         }
@@ -58,14 +58,15 @@ public class JwtAuthentificationFilter extends OncePerRequestFilter {
             final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             final boolean isTokenInDbValid = tokenRepository.findByToken(jwt)
                     .map(t -> !t.isExpired() && !t.isRevoked())
-                    .orElse(false);
+                    .orElseGet(() -> {
+                        log.info("No such valid token is present in db, username: {} token: {}", username, jwt);
+                        return false;
+                    });
             if (jwtService.isTokenValid(jwt, userDetails) && isTokenInDbValid) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-            } else {
-                log.warn("Token is not valid, userName: {}", userDetails.getUsername());
             }
         } else {
             log.info("User with username: {} is already authenticated", username);
