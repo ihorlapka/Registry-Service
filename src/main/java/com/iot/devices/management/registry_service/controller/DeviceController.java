@@ -45,7 +45,7 @@ public class DeviceController {
     @CreateDeviceOpenApi
     public ResponseEntity<DeviceDTO> createDevice(@RequestBody @Valid CreateDeviceRequest request, Authentication auth) {
         final Optional<User> owner = loadUser(request.ownerId());
-        if (!isAdmin(auth) && !isTheSameUser(owner, auth)) {
+        if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
         final Optional<Device> device = deviceService.findBySerialNumber(request.serialNumber());
@@ -61,7 +61,7 @@ public class DeviceController {
     @UpdateDeviceOpenApi
     public ResponseEntity<DeviceDTO> patchDevice(@RequestBody @Valid PatchDeviceRequest request, Authentication auth) {
         final Optional<User> owner = loadUser(request.ownerId());
-        if (!isAdmin(auth) && !isTheSameUser(owner, auth)) {
+        if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
         final Device patched = deviceService.patch(request, owner.orElse(null));
@@ -74,7 +74,7 @@ public class DeviceController {
     public ResponseEntity<DeviceDTO> getDevice(@PathVariable @NonNull UUID deviceId, Authentication auth) {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
         final Optional<User> owner = device.map(Device::getOwner);
-        if (!isAdmin(auth) && !isTheSameUser(owner, auth)) {
+        if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
         return device.map(Utils::getDeviceInfo)
@@ -87,7 +87,7 @@ public class DeviceController {
     public ResponseEntity<Void> deleteDevice(@PathVariable @NonNull UUID deviceId, Authentication auth) {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
         final Optional<User> owner = device.map(Device::getOwner);
-        if (!isAdmin(auth) && !isTheSameUser(owner, auth)) {
+        if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
         if (device.isEmpty()) {
@@ -104,10 +104,5 @@ public class DeviceController {
 
     private Optional<User> loadUser(UUID userId) {
         return ofNullable(userId).flatMap(userService::findByUserId);
-    }
-
-    @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "BooleanMethodIsAlwaysInverted"})
-    private boolean isTheSameUser(Optional<User> owner, Authentication auth) {
-        return owner.stream().anyMatch(o -> o.getUsername().equals(auth.getName()));
     }
 }

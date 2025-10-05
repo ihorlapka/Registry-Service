@@ -167,7 +167,7 @@ class UserControllerTest {
         verifyNoMoreInteractions(userService);
     }
 
-    @WithMockUser(username = "jonndoe123")
+    @WithMockUser(username = "jonndoe123", roles = "MANAGER")
     @Test
     void patchNoUserFound() throws Exception {
         String patchedAddress = "some updated address";

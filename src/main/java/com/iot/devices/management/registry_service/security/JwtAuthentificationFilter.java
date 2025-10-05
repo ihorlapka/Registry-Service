@@ -56,13 +56,7 @@ public class JwtAuthentificationFilter extends OncePerRequestFilter {
         }
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            final boolean isTokenInDbValid = tokenRepository.findByToken(jwt)
-                    .map(t -> !t.isExpired() && !t.isRevoked())
-                    .orElseGet(() -> {
-                        log.info("No such valid token is present in db, username: {} token: {}", username, jwt);
-                        return false;
-                    });
-            if (jwtService.isTokenValid(jwt, userDetails) && isTokenInDbValid) {
+            if (jwtService.isTokenValid(jwt, userDetails) && isTokenInDbMatch(jwt, username)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -72,5 +66,14 @@ public class JwtAuthentificationFilter extends OncePerRequestFilter {
             log.info("User with username: {} is already authenticated", username);
         }
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isTokenInDbMatch(String jwt, String username) {
+        return tokenRepository.findByToken(jwt)
+                .map(t -> !t.isExpired() && !t.isRevoked())
+                .orElseGet(() -> {
+                    log.info("No such valid token is present in db, username: {} token: {}", username, jwt);
+                    return false;
+                });
     }
 }

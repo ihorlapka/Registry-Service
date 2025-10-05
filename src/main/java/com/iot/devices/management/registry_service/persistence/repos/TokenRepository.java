@@ -12,12 +12,12 @@ import java.util.UUID;
 
 public interface TokenRepository extends JpaRepository<Token, UUID> {
 
-    @Query("SELECT t FROM Token t WHERE t.user.id = :id AND (t.expired = false OR t.revoked = false)")
+    @Query("SELECT t FROM Token t WHERE t.user.id = :id AND (t.expired = false AND t.revoked = false)")
     List<Token> findAllValidTokenByUser(@Param("id") UUID userId);
 
     Optional<Token> findByToken(String token);
 
     @Modifying
-    @Query("DELETE FROM Token t WHERE t.user.id = :userId")
-    int removeAllByUserId(@Param("userId") UUID userId);
+    @Query("DELETE FROM Token t WHERE t.user.id = :id")
+    int removeAllByUserId(@Param("id") UUID userId);
 }

@@ -4,30 +4,40 @@ import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
 import com.iot.devices.management.registry_service.controller.dto.UserDTO;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import lombok.experimental.UtilityClass;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.Collection;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
-import static com.iot.devices.management.registry_service.persistence.model.enums.UserRole.ADMIN;
-import static com.iot.devices.management.registry_service.persistence.model.enums.UserRole.SUPER_ADMIN;
+import static com.iot.devices.management.registry_service.persistence.model.enums.UserRole.*;
 import static java.util.stream.Collectors.toSet;
 
 @UtilityClass
 public class Utils {
 
-    private static final String ROLE_PREFIX = "ROLE_";
+    @SuppressWarnings({"BooleanMethodIsAlwaysInverted", "OptionalUsedAsFieldOrParameterType"})
+    public static boolean hasPermission(Authentication auth, Optional<User> owner) {
+        final UserRole authRole = getMinRoleLevel(auth);
+        if (owner.isEmpty() && USER.equals(authRole)) {
+            return false;
+        }
+        if (owner.map(o -> o.getUsername().equals(auth.getName())).orElse(false)) {
+            return true;
+        }
+        return owner.map(user -> user.getUserRole().getLevel() < authRole.getLevel())
+                .orElse(true);
+    }
 
-    public static boolean isAdmin(Authentication authentication) {
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        return authorities.contains(new SimpleGrantedAuthority(ROLE_PREFIX + ADMIN.name())) ||
-                authorities.contains(new SimpleGrantedAuthority(ROLE_PREFIX + SUPER_ADMIN.name()));
+    private UserRole getMinRoleLevel(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(UserRole::findByRole)
+                .min(Comparator.comparingInt(UserRole::getLevel))
+                .orElseThrow(() -> new NoSuchElementException("No authorities present for user: " + authentication.getName()));
     }
 
     public static URI getLocation(UUID id) {
@@ -38,7 +48,7 @@ public class Utils {
     }
 
     public static DeviceDTO getDeviceInfo(Device device) {
-        UUID ownerId = (device.getOwner() != null) ? device.getOwner().getId() : null;
+        final UUID ownerId = (device.getOwner() != null) ? device.getOwner().getId() : null;
         return new DeviceDTO(device.getId(), device.getName(), device.getSerialNumber(),
                 device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
                 device.getLocation(), device.getLatitude(), device.getLongitude(), ownerId,

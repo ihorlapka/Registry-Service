@@ -71,16 +71,6 @@ public class JwtService {
         throw new IllegalArgumentException("Invalid token " + currentRefreshToken);
     }
 
-    private Token buildTokenEntity(User user, String token, boolean isRefresh) {
-        return Token.builder()
-                .user(user)
-                .token(token)
-                .expired(false)
-                .revoked(false)
-                .refresh(isRefresh)
-                .build();
-    }
-
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -92,6 +82,16 @@ public class JwtService {
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token, username);
+    }
+
+    private Token buildTokenEntity(User user, String token, boolean isRefresh) {
+        return Token.builder()
+                .user(user)
+                .token(token)
+                .expired(false)
+                .revoked(false)
+                .refresh(isRefresh)
+                .build();
     }
 
     private void revokeAllUserTokens(User user) {

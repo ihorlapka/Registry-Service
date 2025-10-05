@@ -58,10 +58,10 @@ public class UserController {
     @PatchMapping
     @UpdateUserOpenApi
     public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request, Authentication auth) {
-        if (!isAdmin(auth) && !request.username().equals(auth.getName())) {
+        final Optional<User> user = userService.findByUsername(request.username());
+        if (!hasPermission(auth, user)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
-        final Optional<User> user = userService.findByUsername(request.username());
         if (user.isEmpty()) {
             throw new UserNotFoundException(request.username());
         }
@@ -115,7 +115,7 @@ public class UserController {
     @RemoveUserByIdOpenApi
     public ResponseEntity<Void> deleteUser(@PathVariable UUID userId, Authentication auth) {
         final Optional<User> user = userService.findByUserId(userId);
-        if (!isAdmin(auth) && !isTheSameUser(auth, user)) {
+        if (!hasPermission(auth, user)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
         if (user.isEmpty()) {
@@ -126,10 +126,5 @@ public class UserController {
             log.info("User with id: {} is removed", userId);
         }
         return ResponseEntity.noContent().build();
-    }
-
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static Boolean isTheSameUser(Authentication auth, Optional<User> user) {
-        return user.map(u -> u.getUsername().equals(auth.getName())).orElse(false);
     }
 }
