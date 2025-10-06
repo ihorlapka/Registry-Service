@@ -32,6 +32,19 @@ public class Utils {
                 .orElse(true);
     }
 
+    @SuppressWarnings({"BooleanMethodIsAlwaysInverted", "OptionalUsedAsFieldOrParameterType"})
+    public static boolean hasPatchPermission(Authentication auth, Optional<User> userToBePatched, PatchUserRequest request) {
+        final UserRole authRole = getMinRoleLevel(auth);
+        if (userToBePatched.isEmpty()) {
+            return !USER.equals(authRole);
+        }
+        if (userToBePatched.map(u -> u.getUsername().equals(auth.getName())).orElse(false)) {
+            return Objects.equals(request.userRole(), authRole) || request.userRole() == null;
+        }
+        return userToBePatched.map(user -> user.getUserRole().getLevel() < authRole.getLevel())
+                .orElse(true);
+    }
+
     private UserRole getMinRoleLevel(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)

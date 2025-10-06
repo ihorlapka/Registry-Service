@@ -59,7 +59,7 @@ public class UserController {
     @UpdateUserOpenApi
     public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request, Authentication auth) {
         final Optional<User> user = userService.findByUsername(request.username());
-        if (!hasPermission(auth, user)) {
+        if (!hasPatchPermission(auth, user, request)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
         if (user.isEmpty()) {
