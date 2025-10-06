@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -89,6 +90,11 @@ public class UserService {
         throw new UserNotFoundException(id);
     }
 
+    @Transactional
+    public int updateLastLoginTime(UUID userId, Instant loginTime) {
+        return usersRepository.updateLastLoginTime(userId, loginTime);
+    }
+
     @Caching(evict = {
             @CacheEvict(value = "usersCache", key = "#id"),
             @CacheEvict(value = "usersCache", key = "#email")
@@ -100,7 +106,7 @@ public class UserService {
         UserRole userRole = ofNullable(role).orElse(UserRole.USER);
         return new User(null, request.username(), request.firstName(), request.lastName(),
                 request.email(), request.phone(), request.address(), passwordEncoder.encode(request.password()),
-                userRole, now(), now(), now(), new HashSet<>(), new ArrayList<>());
+                userRole, now(), null, null, new HashSet<>(), new ArrayList<>());
     }
 
     private User patchUser(PatchUserRequest request, User user) {

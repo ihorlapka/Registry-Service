@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,4 +22,8 @@ public interface UsersRepository extends JpaRepository<User, UUID> {
     @Modifying
     @Query("DELETE FROM User u WHERE u.id = :id")
     int removeById(@NonNull @Param("id") UUID id);
+
+    @Modifying
+    @Query("UPDATE User u SET u.lastLoginAt = :loginTime WHERE u.id = :id")
+    int updateLastLoginTime(@Param("id") UUID id, @Param("loginTime") Instant loginTime);
 }
