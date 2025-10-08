@@ -20,11 +20,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.Instant;
+import java.util.*;
 
+import static com.iot.devices.management.registry_service.security.JwtAuthentificationFilter.TOKEN_PREFIX;
 import static java.time.OffsetDateTime.now;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -50,6 +49,8 @@ class AuthenticationControllerTest {
 
     @Autowired
     MockMvc mockMvc;
+    @Autowired
+    JwtService jwtService;
 
     @MockitoBean
     UserService userService;
@@ -86,12 +87,14 @@ class AuthenticationControllerTest {
             """.formatted(username, passwordHash);
 
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-        String jwt = "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0ZXN0VXNlciIsImlhdCI6MTc1OTM5NTEwNCwiZXhwIjoxNzU5NDgxNTA0fQ.wON4LoIDM9GpZI33JSnBIeT8CsAtNHvqHysLyWoz7KGlk6jGlmvHpKvM0uCY5pJx";
-        headers.add(AUTHORIZATION, jwt);
+        String jwt = jwtService.generateTokens(USER).getAccessToken();
+        headers.add(AUTHORIZATION, TOKEN_PREFIX + jwt);
 
         when(userService.findByUsername(username)).thenReturn(Optional.of(USER));
-        when(tokenRepository.findByToken(anyString())).thenReturn(Optional.of(Token.builder().token(jwt).user(USER).revoked(false).expired(false).refresh(false).build()));
+        when(tokenRepository.findByToken(anyString())).thenReturn(Optional.of(Token.builder()
+                .token(jwt).user(USER).revoked(false).expired(false).refresh(false).build()));
         when(tokenRepository.removeAllByUserId(any())).thenReturn(2);
+        when(userService.updateLastLoginTime(eq(USER_ID), any(Instant.class))).thenReturn(1);
         mockMvc.perform(post("/api/v1/authentication/login")
                         .contentType(APPLICATION_JSON)
                         .content(json))
@@ -104,8 +107,9 @@ class AuthenticationControllerTest {
 
         verify(userService).findByUsername(any());
         verify(authenticationManager).authenticate(any());
+        verify(tokenRepository, times(2)).saveAll(anyList());
+        verify(userService).updateLastLoginTime(eq(USER_ID), any(Instant.class));
         verify(tokenRepository).findByToken(anyString());
-        verify(tokenRepository).saveAll(anyList());
         verify(tokenRepository).removeAllByUserId(any());
     }
 
