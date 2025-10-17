@@ -39,7 +39,7 @@ public class Device {
     @Column(name = "serial_number", unique = true, nullable = false, length = 100)
     private String serialNumber;
 
-    @Column(name = "manufacturer", columnDefinition = "device_manufacturer", nullable = false)
+    @Column(name = "manufacturer", columnDefinition = "device_manufacturers", nullable = false)
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private DeviceManufacturer deviceManufacturer;

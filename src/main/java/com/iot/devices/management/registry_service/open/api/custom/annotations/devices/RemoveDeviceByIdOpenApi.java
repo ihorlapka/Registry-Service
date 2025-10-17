@@ -1,6 +1,6 @@
 package com.iot.devices.management.registry_service.open.api.custom.annotations.devices;
 
-import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
+import com.iot.devices.management.registry_service.controller.dto.DeviceDto;
 import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,7 +26,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                         description = "Device is removed",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = DeviceDTO.class))
+                                schema = @Schema(implementation = DeviceDto.class))
                 ),
                 @ApiResponse(
                         responseCode = "404",

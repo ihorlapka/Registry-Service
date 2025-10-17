@@ -1,7 +1,9 @@
 package com.iot.devices.management.registry_service.controller.util;
 
-import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
-import com.iot.devices.management.registry_service.controller.dto.UserDTO;
+import com.iot.devices.management.registry_service.controller.dto.AlertRuleDto;
+import com.iot.devices.management.registry_service.controller.dto.DeviceDto;
+import com.iot.devices.management.registry_service.controller.dto.UserDto;
+import com.iot.devices.management.registry_service.persistence.model.AlertRule;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
@@ -60,28 +62,33 @@ public class Utils {
                 .toUri();
     }
 
-    public static DeviceDTO getDeviceInfo(Device device) {
+    public static DeviceDto getDeviceInfo(Device device) {
         final UUID ownerId = (device.getOwner() != null) ? device.getOwner().getId() : null;
-        return new DeviceDTO(device.getId(), device.getName(), device.getSerialNumber(),
+        return new DeviceDto(device.getId(), device.getName(), device.getSerialNumber(),
                 device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
                 device.getLocation(), device.getLatitude(), device.getLongitude(), ownerId,
                 device.getStatus(), device.getLastActiveAt(), device.getFirmwareVersion(),
                 device.getCreatedAt(), device.getUpdatedAt());
     }
 
-    public static UserDTO getUserInfo(User saved) {
-        return new UserDTO(saved.getId(), saved.getUsername(), saved.getFirstName(), saved.getLastName(),
+    public static UserDto getUserInfo(User saved) {
+        return new UserDto(saved.getId(), saved.getUsername(), saved.getFirstName(), saved.getLastName(),
                 saved.getPhone(), saved.getEmail(), saved.getAddress(), mapDevices(saved));
     }
 
-    private static Set<DeviceDTO> mapDevices(User saved) {
+    private static Set<DeviceDto> mapDevices(User saved) {
         return saved.getDevices().stream()
-                .map(device -> new DeviceDTO(device.getId(),
+                .map(device -> new DeviceDto(device.getId(),
                         device.getName(), device.getSerialNumber(),
                         device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
                         device.getLocation(), device.getLatitude(), device.getLongitude(),
                         device.getOwner().getId(), device.getStatus(), device.getLastActiveAt(),
                         device.getFirmwareVersion(), device.getCreatedAt(), device.getUpdatedAt()))
                 .collect(toSet());
+    }
+
+    public static AlertRuleDto mapAlertRuleToDto(AlertRule dbRule) {
+        return new AlertRuleDto(dbRule.getRuleId(), dbRule.getDeviceId(), dbRule.getMetricType(),
+                dbRule.getThresholdType(), dbRule.getThresholdValue(), dbRule.getSeverity(), dbRule.isEnabled());
     }
 }

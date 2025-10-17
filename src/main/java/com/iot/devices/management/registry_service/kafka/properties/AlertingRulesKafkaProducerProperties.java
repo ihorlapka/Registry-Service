@@ -13,16 +13,17 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
+
 @Slf4j
 @Getter
 @Setter
 @ToString
 @Configuration
-@ConfigurationProperties(KafkaProducerProperties.PROPERTIES_PREFIX)
+@ConfigurationProperties(AlertingRulesKafkaProducerProperties.PROPERTIES_PREFIX)
 @RequiredArgsConstructor
-public class KafkaProducerProperties {
+public class AlertingRulesKafkaProducerProperties {
 
-    final static String PROPERTIES_PREFIX = "kafka.producer";
+    final static String PROPERTIES_PREFIX = "kafka.producer.alerting-rules";
 
     private Map<String, String> properties = new HashMap<>();
 
@@ -34,6 +35,6 @@ public class KafkaProducerProperties {
 
     @PostConstruct
     private void logProperties() {
-        log.info("kafka producer properties: {}", this);
+        log.info("kafka producer alerting rules properties: {}", this);
     }
 }

@@ -78,23 +78,44 @@ kafka:
       fetch.max.wait.ms: 5000
       value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
   producer:
-    topic: dead-letter-telemetries-updates
-    executor-termination-timeout-ms: 5000
-    properties:
-      bootstrap.servers: localhost:9092
-      key.serializer: org.apache.kafka.common.serialization.StringSerializer
-      value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      schema.registry.url: http://localhost:8081
-      acks: all
-      linger.ms: 10
-      batch.size: 32768
-      compression.type: snappy
-      retries: 3
-      retry.backoff.ms: 100
-      enable.idempotence: true
-      request.timeout.ms: 15000
-      delivery.timeout.ms: 30000
-      client.id: dead-letter-updates-producer
+    dead-letter:
+      topic: dead-letter-telemetries-updates
+      executor-termination-timeout-ms: 5000
+      properties:
+        bootstrap.servers: localhost:9092
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        schema.registry.url: http://localhost:8081
+        acks: all
+        linger.ms: 10
+        batch.size: 32768
+        compression.type: snappy
+        retries: 3
+        retry.backoff.ms: 100
+        enable.idempotence: true
+        request.timeout.ms: 15000
+        delivery.timeout.ms: 30000
+        client.id: dead-letter-producer
+        auto.register.schemas: false
+    alerting-rules:
+      topic: iot-alerting-rules
+      executor-termination-timeout-ms: 5000
+      properties:
+        bootstrap.servers: localhost:9092
+        key.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        schema.registry.url: http://localhost:8081
+        acks: all
+        linger.ms: 10
+        batch.size: 32768
+        compression.type: snappy
+        retries: 3
+        retry.backoff.ms: 100
+        enable.idempotence: true
+        request.timeout.ms: 15000
+        delivery.timeout.ms: 30000
+        client.id: alerting-rules-producer
+        auto.register.schemas: false
 parallel.patcher:
   threads.amount: 10
   threads.virtual: true

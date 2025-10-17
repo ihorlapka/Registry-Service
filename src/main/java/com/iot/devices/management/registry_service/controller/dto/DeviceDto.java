@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public record DeviceDTO(
+public record DeviceDto(
         UUID id,
         String name,
         String serialNumber,

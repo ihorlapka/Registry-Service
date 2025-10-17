@@ -1,6 +1,6 @@
 package com.iot.devices.management.registry_service.controller;
 
-import com.iot.devices.management.registry_service.controller.dto.DeviceDTO;
+import com.iot.devices.management.registry_service.controller.dto.DeviceDto;
 import com.iot.devices.management.registry_service.controller.util.CreateDeviceRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
 import com.iot.devices.management.registry_service.controller.util.Utils;
@@ -43,7 +43,7 @@ public class DeviceController {
 
     @PostMapping
     @CreateDeviceOpenApi
-    public ResponseEntity<DeviceDTO> createDevice(@RequestBody @Valid CreateDeviceRequest request, Authentication auth) {
+    public ResponseEntity<DeviceDto> createDevice(@RequestBody @Valid CreateDeviceRequest request, Authentication auth) {
         final Optional<User> owner = loadUser(request.ownerId());
         if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
@@ -59,7 +59,7 @@ public class DeviceController {
 
     @PatchMapping
     @UpdateDeviceOpenApi
-    public ResponseEntity<DeviceDTO> patchDevice(@RequestBody @Valid PatchDeviceRequest request, Authentication auth) {
+    public ResponseEntity<DeviceDto> patchDevice(@RequestBody @Valid PatchDeviceRequest request, Authentication auth) {
         final Optional<User> owner = loadUser(request.ownerId());
         if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
@@ -71,7 +71,7 @@ public class DeviceController {
     @GetMapping("{deviceId}")
     @GetDeviceByIdOpenApi
     @RateLimiter(name = "get_device_limiter", fallbackMethod = "rateLimitFallback")
-    public ResponseEntity<DeviceDTO> getDevice(@PathVariable @NonNull UUID deviceId, Authentication auth) {
+    public ResponseEntity<DeviceDto> getDevice(@PathVariable @NonNull UUID deviceId, Authentication auth) {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
         final Optional<User> owner = device.map(Device::getOwner);
         if (!hasPermission(auth, owner)) {
@@ -98,7 +98,7 @@ public class DeviceController {
     }
 
     //not redundant, used when method getDevice() achieved max retries
-    public ResponseEntity<DeviceDTO>  rateLimitFallback(UUID deviceId, Throwable t) {
+    public ResponseEntity<DeviceDto>  rateLimitFallback(UUID deviceId, Throwable t) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
     }
 

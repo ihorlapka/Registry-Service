@@ -1,7 +1,7 @@
 package com.iot.devices.management.registry_service.controller;
 
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
-import com.iot.devices.management.registry_service.controller.dto.UserDTO;
+import com.iot.devices.management.registry_service.controller.dto.UserDto;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.controller.util.Utils;
 import com.iot.devices.management.registry_service.open.api.custom.annotations.users.*;
@@ -36,17 +36,17 @@ public class UserController {
 
     @PostMapping("/registerUser")
     @CreateUserOpenApi
-    public ResponseEntity<UserDTO> createUser(@RequestBody @Valid CreateUserRequest request) {
+    public ResponseEntity<UserDto> createUser(@RequestBody @Valid CreateUserRequest request) {
         return registerUser(request, USER);
     }
 
     @PostMapping("/registerAdmin")
     @CreateAdminOpenApi
-    public ResponseEntity<UserDTO> createAdmin(@RequestBody @Valid CreateUserRequest request) {
+    public ResponseEntity<UserDto> createAdmin(@RequestBody @Valid CreateUserRequest request) {
         return registerUser(request, ADMIN);
     }
 
-    private ResponseEntity<UserDTO> registerUser(CreateUserRequest request, UserRole role) {
+    private ResponseEntity<UserDto> registerUser(CreateUserRequest request, UserRole role) {
         final Optional<User> user = userService.findByEmail(request.email());
         if (user.isPresent()) {
             throw new DuplicateUserException(request.email());
@@ -57,7 +57,7 @@ public class UserController {
 
     @PatchMapping
     @UpdateUserOpenApi
-    public ResponseEntity<UserDTO> patchUser(@RequestBody @Valid PatchUserRequest request, Authentication auth) {
+    public ResponseEntity<UserDto> patchUser(@RequestBody @Valid PatchUserRequest request, Authentication auth) {
         final Optional<User> user = userService.findByUsername(request.username());
         if (!hasPatchPermission(auth, user, request)) {
             return ResponseEntity.status(FORBIDDEN).build();
@@ -71,15 +71,15 @@ public class UserController {
 
     @GetMapping("/all")
     @GetAllUsersOpenApi
-    public ResponseEntity<List<UserDTO>> getAllUsers(Pageable pageable) {
+    public ResponseEntity<List<UserDto>> getAllUsers(Pageable pageable) {
         final Page<User> users = userService.findAll(pageable);
-        final List<UserDTO> userDTOS = users.stream().map(Utils::getUserInfo).toList();
+        final List<UserDto> userDTOS = users.stream().map(Utils::getUserInfo).toList();
         return ResponseEntity.ok(userDTOS);
     }
 
     @GetMapping("/me")
     @GetMyUserOpenApi
-    public ResponseEntity<UserDTO> getMyUser(Authentication auth) {
+    public ResponseEntity<UserDto> getMyUser(Authentication auth) {
         final Optional<User> user = userService.findByUsername(auth.getName());
         if (user.isEmpty()) {
             throw new UserNotFoundException(auth.getName());
@@ -89,7 +89,7 @@ public class UserController {
 
     @GetMapping("{userId}")
     @GetUserByIdOpenApi
-    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID userId) {
+    public ResponseEntity<UserDto> getUserById(@PathVariable UUID userId) {
         final Optional<User> user = userService.findByUserId(userId);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
                 .orElseThrow(() -> new UserNotFoundException(userId));
@@ -97,7 +97,7 @@ public class UserController {
 
     @GetMapping("/username/{username}")
     @GetUserByUsernameOpenApi
-    public ResponseEntity<UserDTO> getUserByUsername(@PathVariable String username) {
+    public ResponseEntity<UserDto> getUserByUsername(@PathVariable String username) {
         final Optional<User> user = userService.findByUsername(username);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
                 .orElseThrow(() -> new UserNotFoundException(username));
@@ -105,7 +105,7 @@ public class UserController {
 
     @GetMapping("email/{email}")
     @GetUserByEmailOpenApi
-    public ResponseEntity<UserDTO> findByEmail(@PathVariable @Valid String email) {
+    public ResponseEntity<UserDto> findByEmail(@PathVariable @Valid String email) {
         final Optional<User> user = userService.findByEmail(email);
         return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
                 .orElseThrow(() -> new UserNotFoundException(email));

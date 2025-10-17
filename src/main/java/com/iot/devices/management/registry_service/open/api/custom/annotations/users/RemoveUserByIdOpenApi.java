@@ -1,7 +1,7 @@
 package com.iot.devices.management.registry_service.open.api.custom.annotations.users;
 
 
-import com.iot.devices.management.registry_service.controller.dto.UserDTO;
+import com.iot.devices.management.registry_service.controller.dto.UserDto;
 import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,7 +27,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                         description = "User is removed",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserDTO.class))
+                                schema = @Schema(implementation = UserDto.class))
                 ),
                 @ApiResponse(
                         responseCode = "404",
