@@ -22,7 +22,7 @@ import static java.util.Collections.emptyMap;
 import static org.springframework.http.HttpStatus.*;
 
 @RestControllerAdvice
-public class ErrorHandler extends ResponseEntityExceptionHandler {
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex, WebRequest request) {
@@ -66,6 +66,28 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
                 URI.create(request.getDescription(false)),
                 emptyMap());
         return new ResponseEntity<>(response, CONFLICT);
+    }
+
+    @ExceptionHandler(AlertRuleNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAlertRuleNotFoundException(AlertRuleNotFoundException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
+                NOT_FOUND,
+                ex.getMessage(),
+                "Unable to find alertRule!",
+                URI.create(request.getDescription(false)),
+                emptyMap());
+        return new ResponseEntity<>(response, NOT_FOUND);
+    }
+
+    @ExceptionHandler(AlertRuleNotSentException.class)
+    public ResponseEntity<ErrorResponse> handleAlertRuleNotSentException(AlertRuleNotSentException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
+                NOT_FOUND,
+                ex.getMessage(),
+                "Unable to send alertRule to telemetries events processor!",
+                URI.create(request.getDescription(false)),
+                emptyMap());
+        return new ResponseEntity<>(response, NOT_FOUND);
     }
 
     @Override

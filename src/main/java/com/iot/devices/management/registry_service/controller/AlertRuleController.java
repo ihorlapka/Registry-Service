@@ -48,7 +48,7 @@ public class AlertRuleController {
 
     @PostMapping
     public ResponseEntity<AlertRuleDto> createRule(@RequestBody @Valid CreateAlertRuleRequest request, Authentication auth) {
-        final Optional<User> owner = loadUser(auth.getName());
+        final Optional<User> owner = loadUser(request.username());
         if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
@@ -63,12 +63,12 @@ public class AlertRuleController {
         if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
-        final AlertRule saved = alertRuleService.patch(request, owner.orElse(null));
+        final AlertRule saved = alertRuleService.patchAndSendMessage(request, owner.orElse(null));
         return ResponseEntity.created(getLocation(saved.getRuleId()))
                 .body(mapAlertRuleToDto(saved));
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{ruleId}")
     public ResponseEntity<Void> removeRule(@PathVariable("ruleId") UUID ruleId, Authentication auth) {
         final Optional<User> owner = loadUser(auth.getName());
         if (!hasPermission(auth, owner)) {

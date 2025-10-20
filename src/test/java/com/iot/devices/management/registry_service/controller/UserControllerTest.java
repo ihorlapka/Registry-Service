@@ -1,6 +1,6 @@
 package com.iot.devices.management.registry_service.controller;
 
-import com.iot.devices.management.registry_service.controller.errors.ErrorHandler;
+import com.iot.devices.management.registry_service.controller.errors.GlobalExceptionHandler;
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = {
         UserController.class,
-        ErrorHandler.class
+        GlobalExceptionHandler.class
 })
 @Import({
         JwtService.class,

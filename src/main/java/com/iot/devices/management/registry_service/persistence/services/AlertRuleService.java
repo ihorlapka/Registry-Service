@@ -44,7 +44,7 @@ public class AlertRuleService {
 
     //dirty checking
     @Transactional
-    public AlertRule patch(PatchAlertRuleRequest request, @Nullable User user) {
+    public AlertRule patchAndSendMessage(PatchAlertRuleRequest request, @Nullable User user) {
         Optional<AlertRule> alertRule = alertRulesRepository.findById(request.ruleId());
         if (alertRule.isEmpty()) {
             throw new AlertRuleNotFoundException(request.ruleId());

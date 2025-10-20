@@ -48,6 +48,8 @@ public class SecurityConfig {
                         .requestMatchers(GET, "/api/v1/users/*").hasAnyRole(MANAGER.name(), ADMIN.name(), SUPER_ADMIN.name())
                         .requestMatchers("/api/v1/users/**").hasAnyRole(USER.name(), MANAGER.name(), ADMIN.name(), SUPER_ADMIN.name())
                         .requestMatchers("/api/v1/devices/**").hasAnyRole(USER.name(), MANAGER.name(), ADMIN.name(), SUPER_ADMIN.name())
+                        .requestMatchers(GET,"/api/v1/alertRules/userRules/*").hasAnyRole(MANAGER.name(), ADMIN.name(), SUPER_ADMIN.name())
+                        .requestMatchers("/api/v1/alertRules/**").hasAnyRole(USER.name(), MANAGER.name(), ADMIN.name(), SUPER_ADMIN.name())
                         .anyRequest()
                         .authenticated()
                 )

@@ -30,7 +30,7 @@ public class Utils {
         if (owner.map(o -> o.getUsername().equals(auth.getName())).orElse(false)) {
             return true;
         }
-        return owner.map(user -> user.getUserRole().getLevel() < authRole.getLevel())
+        return owner.map(user ->  authRole.getLevel() < user.getUserRole().getLevel())
                 .orElse(true);
     }
 
