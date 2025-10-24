@@ -7,6 +7,7 @@ import org.springframework.lang.Nullable;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 public record PatchDeviceRequest(
@@ -21,6 +22,7 @@ public record PatchDeviceRequest(
         @Nullable DeviceStatus status,
         @Nullable OffsetDateTime lastActiveAt,
         @Nullable String firmwareVersion,
-        @Nullable OffsetDateTime updatedAt
-) {
+        @Nullable OffsetDateTime updatedAt,
+        @Nullable Set<UUID> alertRulesToAdd,
+        @Nullable Set<UUID> alertRulesToRemove) {
 }

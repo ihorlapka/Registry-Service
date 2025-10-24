@@ -118,13 +118,13 @@ class DeviceControllerTest {
     void createDeviceWithUser() throws Exception {
         when(deviceService.findBySerialNumber(any())).thenReturn(Optional.empty());
         when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.of(USER));
-        when(deviceService.save(any(CreateDeviceRequest.class), any(User.class))).thenReturn(DEVICE);
+        when(deviceService.saveAndSendMessage(any(CreateDeviceRequest.class), any(User.class))).thenReturn(DEVICE);
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isCreated());
         verify(deviceService).findBySerialNumber(serialNumber);
-        verify(deviceService).save(any(CreateDeviceRequest.class), any(User.class));
+        verify(deviceService).saveAndSendMessage(any(CreateDeviceRequest.class), any(User.class));
         verify(userService).findByUserId(USER.getId());
     }
 
@@ -133,7 +133,7 @@ class DeviceControllerTest {
     void createDeviceWithoutUser() throws Exception {
         when(deviceService.findBySerialNumber(any())).thenReturn(Optional.empty());
         when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.empty());
-        when(deviceService.save(any(CreateDeviceRequest.class), isNull())).thenReturn(DEVICE);
+        when(deviceService.saveAndSendMessage(any(CreateDeviceRequest.class), isNull())).thenReturn(DEVICE);
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
@@ -146,13 +146,13 @@ class DeviceControllerTest {
     void createDeviceWithoutUserAdmin() throws Exception {
         when(deviceService.findBySerialNumber(any())).thenReturn(Optional.empty());
         when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.empty());
-        when(deviceService.save(any(CreateDeviceRequest.class), isNull())).thenReturn(DEVICE);
+        when(deviceService.saveAndSendMessage(any(CreateDeviceRequest.class), isNull())).thenReturn(DEVICE);
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isCreated());
         verify(deviceService).findBySerialNumber(serialNumber);
-        verify(deviceService).save(any(CreateDeviceRequest.class), isNull());
+        verify(deviceService).saveAndSendMessage(any(CreateDeviceRequest.class), isNull());
         verify(userService).findByUserId(USER.getId());
     }
 
@@ -214,13 +214,13 @@ class DeviceControllerTest {
         Device device = DEVICE;
         device.setOwner(null);
         when(userService.findByUserId(UUID.fromString(ownerId))).thenReturn(Optional.empty());
-        when(deviceService.save(any(CreateDeviceRequest.class), isNull())).thenReturn(device);
+        when(deviceService.saveAndSendMessage(any(CreateDeviceRequest.class), isNull())).thenReturn(device);
         mockMvc.perform(post("/api/v1/devices")
                         .contentType(APPLICATION_JSON)
                         .content(filledJson))
                 .andExpect(status().isCreated());
         verify(deviceService).findBySerialNumber(serialNumber);
-        verify(deviceService).save(any(CreateDeviceRequest.class), isNull());
+        verify(deviceService).saveAndSendMessage(any(CreateDeviceRequest.class), isNull());
         verifyNoInteractions(userService);
     }
 

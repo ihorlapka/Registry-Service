@@ -62,7 +62,7 @@ public class Utils {
                 .toUri();
     }
 
-    public static DeviceDto getDeviceInfo(Device device) {
+    public static DeviceDto mapDevice(Device device) {
         final UUID ownerId = (device.getOwner() != null) ? device.getOwner().getId() : null;
         return new DeviceDto(device.getId(), device.getName(), device.getSerialNumber(),
                 device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
@@ -71,24 +71,19 @@ public class Utils {
                 device.getCreatedAt(), device.getUpdatedAt());
     }
 
-    public static UserDto getUserInfo(User saved) {
+    public static UserDto mapUser(User saved) {
         return new UserDto(saved.getId(), saved.getUsername(), saved.getFirstName(), saved.getLastName(),
                 saved.getPhone(), saved.getEmail(), saved.getAddress(), mapDevices(saved));
     }
 
-    private static Set<DeviceDto> mapDevices(User saved) {
-        return saved.getDevices().stream()
-                .map(device -> new DeviceDto(device.getId(),
-                        device.getName(), device.getSerialNumber(),
-                        device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
-                        device.getLocation(), device.getLatitude(), device.getLongitude(),
-                        device.getOwner().getId(), device.getStatus(), device.getLastActiveAt(),
-                        device.getFirmwareVersion(), device.getCreatedAt(), device.getUpdatedAt()))
+    private static Set<DeviceDto> mapDevices(User user) {
+        return user.getDevices().stream()
+                .map(Utils::mapDevice)
                 .collect(toSet());
     }
 
     public static AlertRuleDto mapAlertRuleToDto(AlertRule dbRule) {
-        return new AlertRuleDto(dbRule.getRuleId(), dbRule.getDeviceId(), dbRule.getMetricType(),
+        return new AlertRuleDto(dbRule.getRuleId(), dbRule.getMetricType(),
                 dbRule.getThresholdType(), dbRule.getThresholdValue(), dbRule.getSeverity(), dbRule.isEnabled());
     }
 }

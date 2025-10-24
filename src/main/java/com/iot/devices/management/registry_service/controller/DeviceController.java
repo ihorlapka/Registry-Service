@@ -52,9 +52,9 @@ public class DeviceController {
         if (device.isPresent()) {
             throw new DuplicateDeviceException(request.serialNumber());
         }
-        final Device saved = deviceService.save(request, owner.orElse(null));
+        final Device saved = deviceService.saveAndSendMessage(request, owner.orElse(null));
         return ResponseEntity.created(getLocation(saved.getId()))
-                .body(getDeviceInfo(saved));
+                .body(mapDevice(saved));
     }
 
     @PatchMapping
@@ -65,7 +65,7 @@ public class DeviceController {
             return ResponseEntity.status(FORBIDDEN).build();
         }
         final Device patched = deviceService.patch(request, owner.orElse(null));
-        return ResponseEntity.ok(getDeviceInfo(patched));
+        return ResponseEntity.ok(mapDevice(patched));
     }
 
     @GetMapping("{deviceId}")
@@ -77,7 +77,7 @@ public class DeviceController {
         if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
-        return device.map(Utils::getDeviceInfo)
+        return device.map(Utils::mapDevice)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new DeviceNotFoundException(deviceId));
     }

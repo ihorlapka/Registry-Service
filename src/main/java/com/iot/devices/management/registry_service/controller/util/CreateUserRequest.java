@@ -36,6 +36,5 @@ public record CreateUserRequest(
 
         @NonNull
         @NotBlank(message = "Password is required")
-        String password
-        ) {
+        String password) {
 }

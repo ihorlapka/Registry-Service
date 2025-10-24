@@ -52,7 +52,7 @@ public class UserController {
             throw new DuplicateUserException(request.email());
         }
         final User saved = userService.save(request, role);
-        return ResponseEntity.created(getLocation(saved.getId())).body(getUserInfo(saved));
+        return ResponseEntity.created(getLocation(saved.getId())).body(mapUser(saved));
     }
 
     @PatchMapping
@@ -66,14 +66,14 @@ public class UserController {
             throw new UserNotFoundException(request.username());
         }
         final User saved = userService.patch(request, user.get());
-        return ResponseEntity.ok(getUserInfo(saved));
+        return ResponseEntity.ok(mapUser(saved));
     }
 
     @GetMapping("/all")
     @GetAllUsersOpenApi
     public ResponseEntity<List<UserDto>> getAllUsers(Pageable pageable) {
         final Page<User> users = userService.findAll(pageable);
-        final List<UserDto> userDTOS = users.stream().map(Utils::getUserInfo).toList();
+        final List<UserDto> userDTOS = users.stream().map(Utils::mapUser).toList();
         return ResponseEntity.ok(userDTOS);
     }
 
@@ -84,14 +84,14 @@ public class UserController {
         if (user.isEmpty()) {
             throw new UserNotFoundException(auth.getName());
         }
-        return ResponseEntity.ok(getUserInfo(user.get()));
+        return ResponseEntity.ok(mapUser(user.get()));
     }
 
     @GetMapping("{userId}")
     @GetUserByIdOpenApi
     public ResponseEntity<UserDto> getUserById(@PathVariable UUID userId) {
         final Optional<User> user = userService.findByUserId(userId);
-        return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
+        return user.map(u -> ResponseEntity.ok(mapUser(u)))
                 .orElseThrow(() -> new UserNotFoundException(userId));
     }
 
@@ -99,7 +99,7 @@ public class UserController {
     @GetUserByUsernameOpenApi
     public ResponseEntity<UserDto> getUserByUsername(@PathVariable String username) {
         final Optional<User> user = userService.findByUsername(username);
-        return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
+        return user.map(u -> ResponseEntity.ok(mapUser(u)))
                 .orElseThrow(() -> new UserNotFoundException(username));
     }
 
@@ -107,7 +107,7 @@ public class UserController {
     @GetUserByEmailOpenApi
     public ResponseEntity<UserDto> findByEmail(@PathVariable @Valid String email) {
         final Optional<User> user = userService.findByEmail(email);
-        return user.map(u -> ResponseEntity.ok(getUserInfo(u)))
+        return user.map(u -> ResponseEntity.ok(mapUser(u)))
                 .orElseThrow(() -> new UserNotFoundException(email));
     }
 

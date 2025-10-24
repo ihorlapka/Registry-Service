@@ -2,8 +2,6 @@ package com.iot.devices.management.registry_service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
-import com.iot.devices.management.registry_service.controller.errors.AlertRuleNotFoundException;
-import com.iot.devices.management.registry_service.controller.errors.AlertRuleNotSentException;
 import com.iot.devices.management.registry_service.controller.errors.GlobalExceptionHandler;
 import com.iot.devices.management.registry_service.controller.util.CreateAlertRuleRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchAlertRuleRequest;
@@ -28,6 +26,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.iot.devices.management.registry_service.persistence.model.enums.alerts.MetricType.HUMIDITY;
@@ -45,6 +44,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static com.iot.devices.management.registry_service.controller.errors.AlertRulesException.*;
 
 @WebMvcTest(controllers = {
         AlertRuleController.class,
@@ -85,7 +85,7 @@ class AlertRuleControllerTest {
     @WithMockUser(username = "some_username", roles = "USER")
     @Test
     void getMyAlertRulesSuccess() throws Exception {
-        AlertRule alertRule = new AlertRule(randomUUID(), randomUUID(), HUMIDITY, GREATER_THAN,
+        AlertRule alertRule = new AlertRule(randomUUID(), HUMIDITY, GREATER_THAN,
                 10f, WARNING, true, USER.getUsername());
         when(alertRuleService.findRulesByUsername(USER.getUsername())).thenReturn(List.of(alertRule));
         mockMvc.perform(get("/api/v1/alertRules/myRules")
@@ -98,7 +98,7 @@ class AlertRuleControllerTest {
     @WithMockUser(username = "some_manager", roles = "MANAGER")
     @Test
     void getOtherUserAlertRules() throws Exception {
-        AlertRule alertRule = new AlertRule(randomUUID(), randomUUID(), HUMIDITY, GREATER_THAN,
+        AlertRule alertRule = new AlertRule(randomUUID(), HUMIDITY, GREATER_THAN,
                 10f, WARNING, true, USER.getUsername());
         when(alertRuleService.findRulesByUsername(USER.getUsername())).thenReturn(List.of(alertRule));
 
@@ -113,14 +113,14 @@ class AlertRuleControllerTest {
     @Test
     void createAlertRuleToOtherUser() throws Exception {
         UUID deviceId = randomUUID();
-        CreateAlertRuleRequest request = new CreateAlertRuleRequest(deviceId, PERCENTAGE, LESS_THAN,
+        CreateAlertRuleRequest request = new CreateAlertRuleRequest(Set.of(deviceId), PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
-        AlertRule alertRule = new AlertRule(randomUUID(), deviceId, PERCENTAGE, LESS_THAN,
+        AlertRule alertRule = new AlertRule(randomUUID(), PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
         when(userService.findByUsername(USER.getUsername())).thenReturn(Optional.of(USER));
-        when(alertRuleService.saveAndSend(request, USER)).thenReturn(alertRule);
+        when(alertRuleService.saveAndSendMessage(request, USER)).thenReturn(alertRule);
 
         String content = new ObjectMapper().writeValueAsString(request);
         mockMvc.perform(post("/api/v1/alertRules")
@@ -128,7 +128,7 @@ class AlertRuleControllerTest {
                         .content(content))
                 .andExpect(status().isCreated());
 
-        verify(alertRuleService).saveAndSend(request, USER);
+        verify(alertRuleService).saveAndSendMessage(request, USER);
         verify(userService).findByUsername(USER.getUsername());
     }
 
@@ -136,14 +136,14 @@ class AlertRuleControllerTest {
     @Test
     void createAlertRuleToOtherUserFailed() throws Exception {
         UUID deviceId = randomUUID();
-        CreateAlertRuleRequest request = new CreateAlertRuleRequest(deviceId, PERCENTAGE, LESS_THAN,
+        CreateAlertRuleRequest request = new CreateAlertRuleRequest(Set.of(deviceId), PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
-        AlertRule alertRule = new AlertRule(randomUUID(), deviceId, PERCENTAGE, LESS_THAN,
+        AlertRule alertRule = new AlertRule(randomUUID(), PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
         when(userService.findByUsername(USER.getUsername())).thenReturn(Optional.of(USER));
-        when(alertRuleService.saveAndSend(request, USER)).thenThrow(new AlertRuleNotSentException(alertRule.getRuleId().toString()));
+        when(alertRuleService.saveAndSendMessage(request, USER)).thenThrow(new AlertRuleNotSentException(alertRule.getRuleId().toString()));
 
         String content = new ObjectMapper().writeValueAsString(request);
         mockMvc.perform(post("/api/v1/alertRules")
@@ -151,7 +151,7 @@ class AlertRuleControllerTest {
                         .content(content))
                 .andExpect(status().isNotFound());
 
-        verify(alertRuleService).saveAndSend(request, USER);
+        verify(alertRuleService).saveAndSendMessage(request, USER);
         verify(userService).findByUsername(USER.getUsername());
     }
 
@@ -159,14 +159,14 @@ class AlertRuleControllerTest {
     @Test
     void createAlertRuleToMyUser() throws Exception {
         UUID deviceId = randomUUID();
-        CreateAlertRuleRequest request = new CreateAlertRuleRequest(deviceId, PERCENTAGE, LESS_THAN,
+        CreateAlertRuleRequest request = new CreateAlertRuleRequest(Set.of(deviceId), PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
-        AlertRule alertRule = new AlertRule(randomUUID(), deviceId, PERCENTAGE, LESS_THAN,
+        AlertRule alertRule = new AlertRule(randomUUID(), PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
         when(userService.findByUsername(USER.getUsername())).thenReturn(Optional.of(USER));
-        when(alertRuleService.saveAndSend(request, USER)).thenReturn(alertRule);
+        when(alertRuleService.saveAndSendMessage(request, USER)).thenReturn(alertRule);
 
         String content = new ObjectMapper().writeValueAsString(request);
         mockMvc.perform(post("/api/v1/alertRules")
@@ -174,7 +174,7 @@ class AlertRuleControllerTest {
                         .content(content))
                 .andExpect(status().isCreated());
 
-        verify(alertRuleService).saveAndSend(request, USER);
+        verify(alertRuleService).saveAndSendMessage(request, USER);
         verify(userService).findByUsername(USER.getUsername());
     }
 
@@ -183,10 +183,10 @@ class AlertRuleControllerTest {
     void patchAlertRuleToMyUser() throws Exception {
         UUID ruleId = randomUUID();
         UUID deviceId = randomUUID();
-        PatchAlertRuleRequest request = new PatchAlertRuleRequest(ruleId, deviceId, PERCENTAGE, LESS_THAN,
+        PatchAlertRuleRequest request = new PatchAlertRuleRequest(ruleId, Set.of(deviceId), null, PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
-        AlertRule alertRule = new AlertRule(ruleId, deviceId, PERCENTAGE, LESS_THAN,
+        AlertRule alertRule = new AlertRule(ruleId, PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
         when(userService.findByUsername(USER.getUsername())).thenReturn(Optional.of(USER));
@@ -207,10 +207,10 @@ class AlertRuleControllerTest {
     void patchAlertRuleToMyUserFailed() throws Exception {
         UUID ruleId = randomUUID();
         UUID deviceId = randomUUID();
-        PatchAlertRuleRequest request = new PatchAlertRuleRequest(ruleId, deviceId, PERCENTAGE, LESS_THAN,
+        PatchAlertRuleRequest request = new PatchAlertRuleRequest(ruleId, Set.of(deviceId), null, PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
-        AlertRule alertRule = new AlertRule(ruleId, deviceId, PERCENTAGE, LESS_THAN,
+        AlertRule alertRule = new AlertRule(ruleId, PERCENTAGE, LESS_THAN,
                 50f, CRITICAL, true, USER.getUsername());
 
         when(userService.findByUsername(USER.getUsername())).thenReturn(Optional.of(USER));

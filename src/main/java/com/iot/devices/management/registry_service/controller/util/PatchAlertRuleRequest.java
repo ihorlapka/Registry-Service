@@ -4,17 +4,19 @@ import com.iot.devices.management.registry_service.persistence.model.enums.alert
 import com.iot.devices.management.registry_service.persistence.model.enums.alerts.SeverityLevel;
 import com.iot.devices.management.registry_service.persistence.model.enums.alerts.ThresholdType;
 import lombok.NonNull;
+import org.springframework.lang.Nullable;
 
+import java.util.Set;
 import java.util.UUID;
 
 public record PatchAlertRuleRequest(
-        @NonNull
-        UUID ruleId,
-        UUID deviceId,
-        MetricType metricType,
-        ThresholdType thresholdType,
-        Float thresholdValue,
-        SeverityLevel severity,
-        Boolean isEnabled,
-        String username) {
+        @NonNull UUID ruleId,
+        @Nullable Set<UUID> deviceIdsToAdd,
+        @Nullable Set<UUID> deviceIdsToRemove,
+        @Nullable MetricType metricType,
+        @Nullable ThresholdType thresholdType,
+        @Nullable Float thresholdValue,
+        @Nullable SeverityLevel severity,
+        @Nullable Boolean isEnabled,
+        @Nullable String username) {
 }

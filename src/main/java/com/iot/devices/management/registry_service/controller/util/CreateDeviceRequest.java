@@ -8,6 +8,7 @@ import lombok.NonNull;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 public record CreateDeviceRequest(
@@ -29,5 +30,6 @@ public record CreateDeviceRequest(
         @NonNull
         DeviceStatus status,
         OffsetDateTime lastActiveAt,
-        String firmwareVersion) {
+        String firmwareVersion,
+        Set<String> alertRuleIds) {
 }

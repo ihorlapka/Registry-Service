@@ -34,11 +34,11 @@ public class AlertRuleController {
 
     @GetMapping("/myRules")
     public ResponseEntity<List<AlertRuleDto>> getMyAlertRules(Authentication auth) {
-        return getUserAlertRule(auth.getName());
+        return getUserAlertRules(auth.getName());
     }
 
     @GetMapping("/userRules/{username}")
-    public ResponseEntity<List<AlertRuleDto>> getUserAlertRule(@PathVariable("username") String username) {
+    public ResponseEntity<List<AlertRuleDto>> getUserAlertRules(@PathVariable("username") String username) {
         final List<AlertRule> myRules = alertRuleService.findRulesByUsername(username);
         final List<AlertRuleDto> mappedRules = myRules.stream()
                 .map(Utils::mapAlertRuleToDto)
@@ -52,7 +52,7 @@ public class AlertRuleController {
         if (!hasPermission(auth, owner)) {
             return ResponseEntity.status(FORBIDDEN).build();
         }
-        final AlertRule saved = alertRuleService.saveAndSend(request, owner.orElse(null));
+        final AlertRule saved = alertRuleService.saveAndSendMessage(request, owner.orElse(null));
         return ResponseEntity.created(getLocation(saved.getRuleId()))
                 .body(mapAlertRuleToDto(saved));
     }

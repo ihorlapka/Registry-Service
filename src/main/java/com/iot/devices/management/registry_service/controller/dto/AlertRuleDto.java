@@ -7,7 +7,6 @@ import com.iot.devices.management.registry_service.persistence.model.enums.alert
 import java.util.UUID;
 
 public record AlertRuleDto(UUID ruleId,
-                           UUID deviceId,
                            MetricType metricType,
                            ThresholdType thresholdType,
                            Float thresholdValue,

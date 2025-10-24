@@ -1,24 +1,25 @@
 package com.iot.devices.management.registry_service.persistence.services;
 
-import com.iot.alerts.RuleCompoundKey;
-import com.iot.devices.management.registry_service.controller.errors.AlertRuleNotFoundException;
+import com.google.common.collect.Sets;
 import com.iot.devices.management.registry_service.controller.util.CreateAlertRuleRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchAlertRuleRequest;
 import com.iot.devices.management.registry_service.kafka.AlertingRulesKafkaProducer;
-import com.iot.devices.management.registry_service.persistence.model.AlertRule;
-import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.*;
 import com.iot.devices.management.registry_service.persistence.repos.AlertRulesRepository;
+import com.iot.devices.management.registry_service.persistence.repos.DeviceAlertRuleRepository;
+import com.iot.devices.management.registry_service.persistence.repos.DevicesRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Optional.ofNullable;
+import static com.iot.devices.management.registry_service.controller.errors.DeviceExceptions.DeviceNotFoundException;
+import static java.util.stream.Collectors.toSet;
+import static com.iot.devices.management.registry_service.controller.errors.AlertRulesException.*;
 
 @Slf4j
 @Service
@@ -27,32 +28,66 @@ import static java.util.Optional.ofNullable;
 public class AlertRuleService {
 
     private final AlertRulesRepository alertRulesRepository;
+    private final DevicesRepository devicesRepository;
+    private final DeviceAlertRuleRepository deviceAlertRuleRepository;
     private final AlertingRulesKafkaProducer alertRulesProducer;
 
 
     @Transactional
-    public AlertRule saveAndSend(CreateAlertRuleRequest request, User user) {
+    public AlertRule saveAndSendMessage(CreateAlertRuleRequest request, User user) {
         try {
-            final AlertRule saved = alertRulesRepository.save(mapNewAlertRule(request, user));
-            alertRulesProducer.send(buildKey(saved), buildAlertRuleMessage(saved));
-            return saved;
-        } catch (RuntimeException e) {
-            log.warn("Unable to save or send Alert Rule, transaction will be rolled back if it was committed");
-            throw e;
+            final List<Device> devices = loadDevices(request.deviceIds());
+            final AlertRule alertRule = alertRulesRepository.save(mapNewAlertRule(request, user));
+            final List<DeviceAlertRule> deviceAlertRules = getDeviceAlertRules(devices, alertRule);
+            final List<DeviceAlertRule> storedDevicesAlertRules = deviceAlertRuleRepository.saveAll(deviceAlertRules);
+            if (!storedDevicesAlertRules.isEmpty() && storedDevicesAlertRules.size() == deviceAlertRules.size()) {
+                alertRulesProducer.sendOne(alertRule.getRuleId().toString(), buildAlertRuleMessage(alertRule, request.deviceIds()));
+            } else {
+                throw new RuntimeException("Not all devices alert rules were persisted!");
+            }
+            return alertRule;
+        } catch (Exception e) {
+            log.warn("Unable to create Alert Rule, transaction will be rolled back if it was committed", e);
+            throw new UnableToCreateAlertRuleException(e.getMessage(), e);
         }
     }
 
     //dirty checking
     @Transactional
     public AlertRule patchAndSendMessage(PatchAlertRuleRequest request, @Nullable User user) {
-        Optional<AlertRule> alertRule = alertRulesRepository.findById(request.ruleId());
-        if (alertRule.isEmpty()) {
-            throw new AlertRuleNotFoundException(request.ruleId());
-        }
         try {
-            final AlertRule patched = patchAlertRule(request, alertRule.get(), user);
-            alertRulesProducer.send(buildKey(patched), buildAlertRuleMessage(patched));
-            return patched;
+            final Optional<AlertRule> alertRule = alertRulesRepository.findById(request.ruleId());
+            if (alertRule.isEmpty()) {
+                throw new AlertRuleNotFoundException(request.ruleId());
+            }
+            if (request.deviceIdsToAdd() != null && !request.deviceIdsToAdd().isEmpty()) {
+                final List<Device> devicesToBeAdded = loadDevices(request.deviceIdsToAdd());
+                final List<DeviceAlertRule> deviceAlertRules = getDeviceAlertRules(devicesToBeAdded, alertRule.get());
+                final List<DeviceAlertRule> storedDevicesAlertRules = deviceAlertRuleRepository.saveAll(deviceAlertRules);
+                if (storedDevicesAlertRules.isEmpty() || storedDevicesAlertRules.size() != request.deviceIdsToAdd().size()) {
+                    throw new RuntimeException("Not all devices alert rules were persisted!");
+                }
+            }
+            if (request.deviceIdsToRemove() != null && !request.deviceIdsToRemove().isEmpty()) {
+                final List<DeviceAlertRuleKey> keysToRemove = request.deviceIdsToRemove().stream()
+                        .map(deviceId -> DeviceAlertRuleKey.of(deviceId, alertRule.get().getRuleId()))
+                        .toList();
+                final int removed = deviceAlertRuleRepository.removeAllByIds(keysToRemove);
+                if (removed == 0) {
+                    log.warn("Device alert rules were already removed for alertRuleId={}", request.ruleId());
+                }
+                if (removed != request.deviceIdsToRemove().size()) {
+                    throw new RuntimeException("Not all devices alert rules were removed!");
+                }
+            }
+            final Set<DeviceAlertRule> deviceAlertRules = deviceAlertRuleRepository.findByAlertRule(alertRule.get());
+            final Set<UUID> deviceIds = deviceAlertRules.stream()
+                    .map(DeviceAlertRule::getDevice)
+                    .map(Device::getId)
+                    .collect(toSet());
+            final AlertRule alertRulePatched = patchAlertRule(request, alertRule.get(), user);
+            alertRulesProducer.sendOne(alertRule.get().getRuleId().toString(), buildAlertRuleMessage(alertRulePatched, deviceIds));
+            return alertRulePatched;
         } catch (RuntimeException e) {
             log.warn("Unable to patch or send Alert Rule, transaction will be rolled back if it was committed");
             throw e;
@@ -65,7 +100,8 @@ public class AlertRuleService {
         if (alertRule.isPresent()) {
             try {
                 alertRulesRepository.deleteById(ruleId);
-                alertRulesProducer.send(buildKey(alertRule.get()), null);
+                //TODO: remove device alert rules!
+                alertRulesProducer.sendOne(alertRule.get().getRuleId().toString(), null);
             } catch (RuntimeException e) {
                 log.warn("Unable to delete or send Alert Rule, transaction will be rolled back if it was committed");
                 throw e;
@@ -79,17 +115,30 @@ public class AlertRuleService {
         return alertRulesRepository.findAlertRulesByUsername(username);
     }
 
-    private RuleCompoundKey buildKey(AlertRule alertRule) {
-        return RuleCompoundKey.newBuilder()
-                .setRuleId(alertRule.getRuleId().toString())
-                .setDeviceId(alertRule.getDeviceId().toString())
-                .build();
+    private List<Device> loadDevices(Set<UUID> deviceIds) {
+        final List<Device> devices = devicesRepository.findAllById(deviceIds);
+        if (devices.isEmpty()) {
+            throw new IllegalArgumentException("No devices found for given Ids: [" + deviceIds + "]");
+        }
+        if (devices.size() != deviceIds.size()) {
+            throw new DeviceNotFoundException("No devices present in db with Ids: [" +
+                    Sets.difference(deviceIds, devices.stream().map(Device::getId).collect(toSet())) + "]");
+        }
+        return devices;
     }
 
-    private com.iot.alerts.AlertRule buildAlertRuleMessage(AlertRule alertRule) {
+    private List<DeviceAlertRule> getDeviceAlertRules(List<Device> devices, AlertRule alertRule) {
+        final List<DeviceAlertRule> deviceAlertRules = new ArrayList<>(devices.size());
+        for (Device device : devices) {
+            deviceAlertRules.add(new DeviceAlertRule(DeviceAlertRuleKey.of(device.getId(), alertRule.getRuleId()), device, alertRule));
+        }
+        return deviceAlertRules;
+    }
+
+    private com.iot.alerts.AlertRule buildAlertRuleMessage(AlertRule alertRule, Set<UUID> deviceUuids) {
         return com.iot.alerts.AlertRule.newBuilder()
                 .setRuleId(alertRule.getRuleId().toString())
-                .setDeviceId(alertRule.getDeviceId().toString())
+                .setDeviceIds(deviceUuids.stream().map(UUID::toString).toList())
                 .setMetricName(com.iot.alerts.MetricType.valueOf(alertRule.getMetricType().name()))
                 .setThresholdType(com.iot.alerts.ThresholdType.valueOf(alertRule.getThresholdType().name()))
                 .setThresholdValue(alertRule.getThresholdValue())
@@ -99,12 +148,11 @@ public class AlertRuleService {
     }
 
     private AlertRule mapNewAlertRule(CreateAlertRuleRequest request, @Nullable User user) {
-        return new AlertRule(null, request.deviceId(), request.metricType(), request.thresholdType(),
+        return new AlertRule(null, request.metricType(), request.thresholdType(),
                 request.thresholdValue(), request.severity(), request.isEnabled(), getUsername(user));
     }
 
     private AlertRule patchAlertRule(PatchAlertRuleRequest request, AlertRule alertRule, @Nullable User user) {
-        ofNullable(request.deviceId()).ifPresent(alertRule::setDeviceId);
         ofNullable(request.metricType()).ifPresent(alertRule::setMetricType);
         ofNullable(request.thresholdType()).ifPresent(alertRule::setThresholdType);
         ofNullable(request.thresholdValue()).ifPresent(alertRule::setThresholdValue);

@@ -20,6 +20,7 @@ import static com.iot.devices.management.registry_service.controller.errors.User
 import static com.iot.devices.management.registry_service.controller.errors.DeviceExceptions.*;
 import static java.util.Collections.emptyMap;
 import static org.springframework.http.HttpStatus.*;
+import static com.iot.devices.management.registry_service.controller.errors.AlertRulesException.*;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -90,6 +91,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(response, NOT_FOUND);
     }
 
+    @ExceptionHandler(UnableToCreateAlertRuleException.class)
+    public ResponseEntity<ErrorResponse> handleAlertRuleNotSentException(UnableToCreateAlertRuleException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
+                INTERNAL_SERVER_ERROR,
+                ex.getMessage(),
+                "Unexpected exception occurred while creating alertRule!",
+                URI.create(request.getDescription(false)),
+                emptyMap());
+        return new ResponseEntity<>(response, INTERNAL_SERVER_ERROR);
+    }
+
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status, WebRequest request) {
@@ -115,7 +127,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         final ErrorResponse response = ErrorResponse.of(
                 INTERNAL_SERVER_ERROR,
                 ex.getMessage(),
-                "Validation failed for one or more fields!",
+                "Server error!",
                 URI.create(request.getDescription(false)),
                 emptyMap());
         return new ResponseEntity<>(response, INTERNAL_SERVER_ERROR);

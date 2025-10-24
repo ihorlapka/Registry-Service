@@ -26,9 +26,6 @@ public class AlertRule {
     @Column(columnDefinition = "uuid", name = "rule_id", updatable = false, nullable = false)
     private UUID ruleId;
 
-    @Column(name = "device_id", nullable = false)
-    private UUID deviceId;
-
     @Column(name = "metric_type", columnDefinition = "metric_types", nullable = false)
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)

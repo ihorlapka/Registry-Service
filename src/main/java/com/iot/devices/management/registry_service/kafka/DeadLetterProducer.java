@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DeadLetterProducer {
 
-    private final KafkaProducerRunner<String> kafkaProducerRunner;
+    private final KafkaProducerRunner<String, SpecificRecord> kafkaProducerRunner;
 
 
     public DeadLetterProducer(DeadLetterKafkaProducerProperties producerProperties, MeterRegistry meterRegistry) {

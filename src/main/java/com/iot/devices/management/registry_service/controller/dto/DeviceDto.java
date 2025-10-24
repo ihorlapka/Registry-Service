@@ -23,6 +23,5 @@ public record DeviceDto(
         OffsetDateTime lastActiveAt,
         String firmwareVersion,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
-) {
+        OffsetDateTime updatedAt) {
 }

@@ -4,7 +4,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -13,13 +12,18 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.toSet;
+import static com.iot.devices.management.registry_service.controller.errors.AlertRulesException.AlertRuleNotSentException;
 
 @Slf4j
-public class KafkaProducerRunner<T> {
+public class KafkaProducerRunner<K, V> {
 
     private final long executorTerminationTimeoutMs;
-    private final KafkaProducer<T, SpecificRecord> kafkaProducer;
+    private final KafkaProducer<K, V> kafkaProducer;
     private final KafkaClientMetrics kafkaClientMetrics;
     private final String topic;
 
@@ -32,14 +36,41 @@ public class KafkaProducerRunner<T> {
         this.kafkaClientMetrics.bindTo(meterRegistry);
     }
 
+    public void initTransactions() {
+        kafkaProducer.initTransactions();
+    }
 
-    public Future<RecordMetadata> send(T key, SpecificRecord telemetry) {
+    public Future<RecordMetadata> send(K key, V telemetry) {
         log.info("Sending to topic={}, events={}", topic, telemetry);
-        final ProducerRecord<T, SpecificRecord> record = new ProducerRecord<>(topic, key, telemetry);
+        final ProducerRecord<K, V> record = new ProducerRecord<>(topic, key, telemetry);
         return kafkaProducer.send(record, getCallback(telemetry));
     }
 
-    private Callback getCallback(SpecificRecord telemetry) {
+    public void sendTransactionally(Set<V> values, Function<V, K> keyFunction) {
+        try {
+            kafkaProducer.beginTransaction();
+            for (V value : values) {
+                final ProducerRecord<K, V> record = new ProducerRecord<>(topic, keyFunction.apply(value), value);
+                kafkaProducer.send(record, getCallback(value));
+            }
+            kafkaProducer.commitTransaction();
+            log.info("AlertRules were sent to topic={}, rules={}", topic, values);
+        } catch (Exception e) {
+            try {
+                kafkaProducer.abortTransaction();
+            } catch (Exception ex) {
+                log.error("Failed to abort transaction after a general KafkaException", ex);
+            }
+            final Set<String> keys = values.stream()
+                    .map(keyFunction)
+                    .map(Object::toString)
+                    .collect(toSet());
+            log.error("Kafka transaction failed and aborted: {}", keys, e);
+            throw new AlertRuleNotSentException(keys);
+        }
+    }
+
+    private Callback getCallback(V telemetry) {
         return (metadata, exception) -> {
             if (exception != null) {
                 log.error("Failed to send message to topic={}, telemetry={}, error={}", topic, telemetry, exception.getMessage(), exception);
