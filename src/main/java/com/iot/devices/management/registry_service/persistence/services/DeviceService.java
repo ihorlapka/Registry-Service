@@ -91,7 +91,7 @@ public class DeviceService {
             if (device.isEmpty()) {
                 throw new DeviceNotFoundException(request.id());
             }
-            final StringBuilder sb = new StringBuilder("Device {" + device.get() + "} is created");
+            final StringBuilder sb = new StringBuilder();
             if (!CollectionUtils.isEmpty(request.alertRulesToAdd()) || CollectionUtils.isEmpty(request.alertRulesToRemove())) {
                 final Set<UUID> alertRulesToBeChangedIds = Sets.union(ofNullable(request.alertRulesToAdd()).orElse(emptySet()),
                         ofNullable(request.alertRulesToRemove()).orElse(emptySet()));
@@ -114,8 +114,7 @@ public class DeviceService {
                     final int removed = deviceAlertRuleRepository.removeAllByIds(keysToRemove);
                     if (removed == 0) {
                         log.warn("Device alert rules were already removed for deviceId={}", request.id());
-                    }
-                    if (removed != request.alertRulesToRemove().size()) {
+                    } else if (removed != request.alertRulesToRemove().size()) {
                         throw new RuntimeException("Not all devices alert rules were removed!");
                     }
                     sb.append(", removed from alertRules {").append(request.alertRulesToRemove()).append("}");
@@ -125,8 +124,9 @@ public class DeviceService {
                         .collect(groupingBy(DeviceAlertRule::getAlertRule, mapping(dar -> dar.getId().getDeviceId(), toList())));
                 alertingRulesKafkaProducer.sendTransactionallyPatch(deviceIdsByAlertRule);
             }
-            log.info(sb.toString());
-            return patchDevice(request, device.get(), user);
+            final Device patchedDevice = patchDevice(request, device.get(), user);
+            log.info("Device is updated {}{}", patchedDevice, sb.toString());
+            return patchedDevice;
         } catch (Exception e) {
             log.warn("Unable to patch Device, transaction will be rolled back if it was committed", e);
             throw new UnableToPatchDeviceException(e.getMessage(), e);
