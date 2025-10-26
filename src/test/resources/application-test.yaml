@@ -80,12 +80,32 @@ kafka:
       fetch.min.bytes: 1
       fetch.max.wait.ms: 5000
   producer:
-    topic: iot-devices-data
-    properties:
-      bootstrap.servers: localhost:9092
-      key.serializer: org.apache.kafka.common.serialization.StringSerializer
-      value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      schema.registry.url: mock://my-scope:8081
+    test:
+      topic: iot-devices-data
+      executor-termination-timeout-ms: 5000
+      properties:
+        bootstrap.servers: localhost:9092
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        schema.registry.url: mock://my-scope:8081
+    alerting-rules:
+      topic: iot-alerting-rules
+      executor-termination-timeout-ms: 5000
+      properties:
+        bootstrap.servers: localhost:9092
+        key.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        schema.registry.url: mock://my-scope:8081
+        transactional.id: alert-rules-transactional-producer-0
+        acks: all
+        linger.ms: 10
+        batch.size: 32768
+        compression.type: snappy
+        retries: 3
+        retry.backoff.ms: 100
+        enable.idempotence: true
+        client.id: alerting-rules-producer
+        auto.register.schemas: false
 parallel.patcher:
   threads.amount: 10
   threads.virtual: false

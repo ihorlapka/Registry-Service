@@ -48,7 +48,7 @@ public class DeviceService {
 
 
     @Transactional
-    public Device saveAndSendMessage(@Valid CreateDeviceRequest request, @Nullable User owner) {
+    public Device saveAndSendMessage(CreateDeviceRequest request, @Nullable User owner) {
         try {
             final Device savedDevice = devicesRepository.save(mapNewDevice(request, owner));
             final StringBuilder sb = new StringBuilder("Device " + savedDevice + " is created");
@@ -88,7 +88,7 @@ public class DeviceService {
 
     //dirty checking
     @Transactional(isolation = Isolation.SERIALIZABLE)
-    public Device patch(@Valid PatchDeviceRequest request, User user) {
+    public Device patch(PatchDeviceRequest request, User user) {
         try {
             final Optional<Device> device = devicesRepository.findById(request.id());
             if (device.isEmpty()) {

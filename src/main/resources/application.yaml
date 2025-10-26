@@ -31,6 +31,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        jdbc.batch_size: 50
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
     open-in-view: false
   devtools:
     restart:
@@ -105,6 +109,7 @@ kafka:
         key.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
         value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
         schema.registry.url: http://localhost:8081
+        transactional.id: alert-rules-transactional-producer-0
         acks: all
         linger.ms: 10
         batch.size: 32768

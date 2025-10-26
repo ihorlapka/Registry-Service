@@ -23,7 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KafkaProducerProperties {
 
-    final static String PROPERTIES_PREFIX = "kafka.producer";
+    final static String PROPERTIES_PREFIX = "kafka.producer.test";
 
     private Map<String, String> properties = new HashMap<>();
 
