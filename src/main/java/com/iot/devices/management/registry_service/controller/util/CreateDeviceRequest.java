@@ -31,5 +31,5 @@ public record CreateDeviceRequest(
         DeviceStatus status,
         OffsetDateTime lastActiveAt,
         String firmwareVersion,
-        Set<String> alertRuleIds) {
+        Set<UUID> alertRuleIds) {
 }

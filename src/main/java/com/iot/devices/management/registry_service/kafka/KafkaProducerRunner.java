@@ -40,10 +40,10 @@ public class KafkaProducerRunner<K, V> {
         kafkaProducer.initTransactions();
     }
 
-    public Future<RecordMetadata> send(K key, V telemetry) {
-        log.info("Sending to topic={}, events={}", topic, telemetry);
-        final ProducerRecord<K, V> record = new ProducerRecord<>(topic, key, telemetry);
-        return kafkaProducer.send(record, getCallback(telemetry));
+    public Future<RecordMetadata> send(K key, V value) {
+        log.info("Sending to topic={}, key={}, message={}", topic, key, value);
+        final ProducerRecord<K, V> record = new ProducerRecord<>(topic, key, value);
+        return kafkaProducer.send(record, getCallback(value));
     }
 
     public void sendTransactionally(Set<V> values, Function<V, K> keyFunction) {
@@ -54,7 +54,7 @@ public class KafkaProducerRunner<K, V> {
                 kafkaProducer.send(record, getCallback(value));
             }
             kafkaProducer.commitTransaction();
-            log.info("AlertRules were sent to topic={}, rules={}", topic, values);
+            log.info("messages were sent to topic={}, {}", topic, values);
         } catch (Exception e) {
             try {
                 kafkaProducer.abortTransaction();
@@ -70,12 +70,12 @@ public class KafkaProducerRunner<K, V> {
         }
     }
 
-    private Callback getCallback(V telemetry) {
+    private Callback getCallback(V message) {
         return (metadata, exception) -> {
             if (exception != null) {
-                log.error("Failed to send message to topic={}, telemetry={}, error={}", topic, telemetry, exception.getMessage(), exception);
+                log.error("Failed to send record to topic={}, message={}, error={}", topic, message, exception.getMessage(), exception);
             } else {
-                log.debug("Successfully sent telemetry to topic={}, partition={}, offset={}", topic, metadata.partition(), metadata.offset());
+                log.debug("Successfully sent record to topic={}, partition={}, offset={}", topic, metadata.partition(), metadata.offset());
             }
         };
     }

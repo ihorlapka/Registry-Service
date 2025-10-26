@@ -18,18 +18,10 @@ public interface DeviceAlertRuleRepository extends JpaRepository<DeviceAlertRule
     @Query("DELETE FROM DeviceAlertRule dar WHERE dar.id IN :ids")
     int removeAllByIds(@Param("ids") List<DeviceAlertRuleKey> ids);
 
-    @Modifying
-    @Query("DELETE FROM DeviceAlertRule dar WHERE dar.device_id = :deviceId")
-    int removeAllByDeviceId(@Param("deviceId") UUID deviceId);
-
     @Query("SELECT dar FROM DeviceAlertRule dar WHERE dar.device_id = :deviceId")
     Set<DeviceAlertRule> findAllByDeviceId(@Param("deviceId") UUID deviceId);
 
     Set<DeviceAlertRule> findByAlertRule(AlertRule alertRule);
 
     Set<DeviceAlertRule> findAllByAlertRuleIn(List<AlertRule> alertRules);
-
-    @Modifying
-    @Query("SELECT dar FROM DeviceAlertRule dar WHERE dar.rule_id IN :alertRules")
-    Set<DeviceAlertRule> findAllByAlertRuleIdIn(@Param("alertRules") Set<UUID> alertRules);
 }

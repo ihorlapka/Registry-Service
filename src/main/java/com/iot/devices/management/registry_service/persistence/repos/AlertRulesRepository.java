@@ -1,6 +1,7 @@
 package com.iot.devices.management.registry_service.persistence.repos;
 
 import com.iot.devices.management.registry_service.persistence.model.AlertRule;
+import lombok.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,10 @@ public interface AlertRulesRepository extends JpaRepository<AlertRule, UUID> {
 
     @Query("SELECT ar FROM AlertRule ar WHERE ar.username = :username")
     List<AlertRule> findAlertRulesByUsername(@Param("username") String username);
+
+    @Modifying
+    @Query("DELETE FROM AlertRule ar WHERE ar.id = :id")
+    int removeById(@NonNull @Param("id") UUID id);
 
     @Modifying
     @Query("DELETE FROM AlertRule ar WHERE ar IN :alertRules")

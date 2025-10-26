@@ -143,7 +143,7 @@ class AlertRuleControllerTest {
                 50f, CRITICAL, true, USER.getUsername());
 
         when(userService.findByUsername(USER.getUsername())).thenReturn(Optional.of(USER));
-        when(alertRuleService.saveAndSendMessage(request, USER)).thenThrow(new AlertRuleNotSentException(alertRule.getRuleId().toString()));
+        when(alertRuleService.saveAndSendMessage(request, USER)).thenThrow(new AlertRuleNotSentException(alertRule.getRuleId()));
 
         String content = new ObjectMapper().writeValueAsString(request);
         mockMvc.perform(post("/api/v1/alertRules")

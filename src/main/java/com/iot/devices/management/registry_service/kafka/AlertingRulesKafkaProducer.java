@@ -5,9 +5,9 @@ import com.iot.devices.management.registry_service.kafka.properties.AlertingRule
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -32,13 +32,11 @@ public class AlertingRulesKafkaProducer {
         kafkaProducerRunner.initTransactions();
     }
 
-    public void sendOne(String key, AlertRule alertRule) {
+    public void sendOneBlocking(UUID key, @Nullable com.iot.devices.management.registry_service.persistence.model.AlertRule alertRule, Set<UUID> deviceIds) {
         try {
-            final Future<RecordMetadata> metadataFuture = kafkaProducerRunner.send(key, alertRule);
-            RecordMetadata recordMetadata = metadataFuture.get();
-            if (recordMetadata.hasOffset()) {
-                log.info("Created Alert Rule with key: {}", key);
-            } else {
+            final Future<RecordMetadata> metadataFuture = kafkaProducerRunner.send(key.toString(), mapAlertRule(alertRule, deviceIds));
+            final RecordMetadata recordMetadata = metadataFuture.get();
+            if (!recordMetadata.hasOffset()) {
                 throw new RuntimeException("Unable to send message: " + alertRule);
             }
         } catch (Exception e) {
@@ -47,24 +45,20 @@ public class AlertingRulesKafkaProducer {
         }
     }
 
-    public void sendTransactionallyCreate(List<com.iot.devices.management.registry_service.persistence.model.AlertRule> alertRules, List<String> deviceIds) {
-        final Set<AlertRule> mappedAlertRules = alertRules.stream()
-                .map(alertRule -> mapAlertRule(alertRule, deviceIds))
-                .collect(toSet());
-        kafkaProducerRunner.sendTransactionally(mappedAlertRules, AlertRule::getRuleId);
-    }
-
-    public void sendTransactionallyPatch(Map<com.iot.devices.management.registry_service.persistence.model.AlertRule, List<UUID>> deviceIdsByAlertRule) {
+    public void sendTransactionally(Map<com.iot.devices.management.registry_service.persistence.model.AlertRule, Set<UUID>> deviceIdsByAlertRule) {
         final Set<AlertRule> mappedAlertRules = deviceIdsByAlertRule.entrySet().stream()
-                .map(entry -> mapAlertRule(entry.getKey(), entry.getValue().stream().map(UUID::toString).toList()))
+                .map(entry -> mapAlertRule(entry.getKey(), entry.getValue()))
                 .collect(toSet());
         kafkaProducerRunner.sendTransactionally(mappedAlertRules, AlertRule::getRuleId);
     }
 
-    private AlertRule mapAlertRule(com.iot.devices.management.registry_service.persistence.model.AlertRule alertRule, List<String> deviceIds) {
+    private AlertRule mapAlertRule(@Nullable com.iot.devices.management.registry_service.persistence.model.AlertRule alertRule, Set<UUID> deviceIds) {
+        if (alertRule == null) {
+            return null;
+        }
         return AlertRule.newBuilder()
                 .setRuleId(alertRule.getRuleId().toString())
-                .setDeviceIds(deviceIds)
+                .setDeviceIds(deviceIds.stream().map(UUID::toString).toList())
                 .setMetricName(com.iot.alerts.MetricType.valueOf(alertRule.getMetricType().name()))
                 .setThresholdType(com.iot.alerts.ThresholdType.valueOf(alertRule.getThresholdType().name()))
                 .setThresholdValue(alertRule.getThresholdValue())

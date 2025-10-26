@@ -14,7 +14,7 @@ public class AlertRulesException {
 
     public static class AlertRuleNotSentException extends RuntimeException {
 
-        public AlertRuleNotSentException(String ruleId) {
+        public AlertRuleNotSentException(UUID ruleId) {
             super("Unable to send alert rule with ruleId=" + ruleId);
         }
 
