@@ -2,7 +2,7 @@ package com.iot.devices.management.registry_service.persistence.services;
 
 import com.iot.devices.*;
 import com.iot.devices.management.registry_service.RegistryServiceApplication;
-import com.iot.devices.management.registry_service.alerts.StandardAlertRulesProvider;
+import com.iot.devices.management.registry_service.alerts.DefaultAlertRulesProvider;
 import com.iot.devices.management.registry_service.kafka.AlertingRulesKafkaProducer;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.*;
         DeviceServiceTelemetriesUpdatesTest.TestPersistenceConfig.class,
         AlertRulesRepository.class,
         DeviceAlertRuleRepository.class,
-        StandardAlertRulesProvider.class
+        DefaultAlertRulesProvider.class
 })
 @TestPropertySource("classpath:application-test.yaml")
 @Testcontainers

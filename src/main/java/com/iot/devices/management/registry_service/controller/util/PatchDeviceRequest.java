@@ -2,6 +2,7 @@ package com.iot.devices.management.registry_service.controller.util;
 
 import com.iot.devices.management.registry_service.persistence.model.enums.DeviceStatus;
 import com.iot.devices.management.registry_service.persistence.model.enums.DeviceType;
+import lombok.Builder;
 import lombok.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -10,6 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.UUID;
 
+@Builder
 public record PatchDeviceRequest(
         @NonNull UUID id,
         @Nullable String name,

@@ -322,11 +322,11 @@ class DeviceControllerTest {
     void deleteDevice() throws Exception {
         DEVICE.setOwner(USER);
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
-        when(deviceService.removeById(any())).thenReturn(1);
+        when(deviceService.removeById(any(), eq(USER))).thenReturn(1);
         mockMvc.perform(delete("/api/v1/devices/" + DEVICE.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isNoContent());
-        verify(deviceService).removeById(any());
+        verify(deviceService).removeById(any(), eq(USER));
         verify(deviceService).findByDeviceId(any());
     }
 
@@ -334,11 +334,11 @@ class DeviceControllerTest {
     @Test
     void deleteDeviceAdmin() throws Exception {
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
-        when(deviceService.removeById(any())).thenReturn(1);
+        when(deviceService.removeById(any(), isNull())).thenReturn(1);
         mockMvc.perform(delete("/api/v1/devices/" + DEVICE.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isNoContent());
-        verify(deviceService).removeById(any());
+        verify(deviceService).removeById(any(), isNull());
         verify(deviceService).findByDeviceId(any());
     }
 }

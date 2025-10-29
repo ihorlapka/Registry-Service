@@ -17,9 +17,11 @@ public class DeviceAlertRule {
 
     @ManyToOne
     @MapsId("deviceId")
+    @JoinColumn(name = "device_id")
     private Device device;
 
     @ManyToOne
     @MapsId("ruleId")
+    @JoinColumn(name = "rule_id")
     private AlertRule alertRule;
 }

@@ -1,13 +1,18 @@
 package com.iot.devices.management.registry_service.persistence.model;
 
 import jakarta.persistence.Embeddable;
-import lombok.Value;
+import lombok.*;
 
 import java.util.UUID;
 
+
+@Getter
+@Setter
+@ToString
 @Embeddable
-@Value(staticConstructor = "of")
+@NoArgsConstructor
+@AllArgsConstructor
 public class DeviceAlertRuleKey {
-    UUID deviceId;
-    UUID ruleId;
+    private UUID deviceId;
+    private UUID ruleId;
 }

@@ -30,6 +30,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        jdbc.batch_size: 50
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
     open-in-view: false
   devtools:
     restart:
@@ -105,15 +109,15 @@ kafka:
         retry.backoff.ms: 100
         enable.idempotence: true
         client.id: alerting-rules-producer
-        auto.register.schemas: false
+        auto.register.schemas: true #for test only
 parallel.patcher:
   threads.amount: 10
   threads.virtual: false
   executor.termination.time.ms: 5000
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
+#logging:
+#  level:
+#    org.hibernate.SQL: DEBUG
+#    org.hibernate.orm.jdbc.bind: TRACE
 persister:
   retries:
     max.attempts: 5

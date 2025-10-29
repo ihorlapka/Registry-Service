@@ -1,7 +1,7 @@
 package com.iot.devices.management.registry_service.persistence.services;
 
 import com.google.common.collect.Sets;
-import com.iot.devices.management.registry_service.alerts.StandardAlertRulesProvider;
+import com.iot.devices.management.registry_service.alerts.DefaultAlertRulesProvider;
 import com.iot.devices.management.registry_service.controller.errors.DeviceExceptions.DeviceNotFoundException;
 import com.iot.devices.management.registry_service.controller.util.CreateDeviceRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
@@ -11,7 +11,6 @@ import com.iot.devices.management.registry_service.persistence.model.*;
 import com.iot.devices.management.registry_service.persistence.repos.AlertRulesRepository;
 import com.iot.devices.management.registry_service.persistence.repos.DeviceAlertRuleRepository;
 import com.iot.devices.management.registry_service.persistence.repos.DevicesRepository;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +42,7 @@ public class DeviceService {
     private final DevicesRepository devicesRepository;
     private final AlertRulesRepository alertRulesRepository;
     private final DeviceAlertRuleRepository deviceAlertRuleRepository;
-    private final StandardAlertRulesProvider alertRulesProvider;
+    private final DefaultAlertRulesProvider alertRulesProvider;
     private final AlertingRulesKafkaProducer alertingRulesKafkaProducer;
 
 
@@ -51,7 +50,7 @@ public class DeviceService {
     public Device saveAndSendMessage(CreateDeviceRequest request, @Nullable User owner) {
         try {
             final Device savedDevice = devicesRepository.save(mapNewDevice(request, owner));
-            final StringBuilder sb = new StringBuilder("Device " + savedDevice + " is created");
+            final StringBuilder sb = new StringBuilder("Device is created " + savedDevice);
             final List<AlertRule> alertRules;
             if (!CollectionUtils.isEmpty(request.alertRuleIds())) {
                 alertRules = alertRulesRepository.findAllById(request.alertRuleIds());
@@ -97,6 +96,7 @@ public class DeviceService {
             final StringBuilder sb = new StringBuilder();
             if (!CollectionUtils.isEmpty(request.alertRulesToAdd()) || CollectionUtils.isEmpty(request.alertRulesToRemove())) {
                 final List<AlertRule> alertRulesToBeChanged = alertRulesRepository.findAllById(getAlertRulesIdsWithChangedDevices(request));
+                final Set<DeviceAlertRule> deviceAlertRulesForMessages = new HashSet<>(alertRulesToBeChanged.size());
 
                 if (request.alertRulesToAdd() != null && !request.alertRulesToAdd().isEmpty()) {
                     final List<AlertRule> alertRulesToBeAdded = getAlertRulesToBeAdded(request.alertRulesToAdd(), alertRulesToBeChanged);
@@ -105,6 +105,7 @@ public class DeviceService {
                         throw new RuntimeException("Not all deviceAlertRules were persisted!");
                     }
                     sb.append(", added to alertRules ").append(request.alertRulesToAdd());
+                    deviceAlertRulesForMessages.addAll(storedDevicesAlertRules);
                 }
                 if (request.alertRulesToRemove() != null && !request.alertRulesToRemove().isEmpty()) {
                     final List<DeviceAlertRuleKey> keysToRemove = getDeviceAlertRuleKeys(request.id(), request.alertRulesToRemove());
@@ -116,8 +117,7 @@ public class DeviceService {
                     }
                     sb.append(", removed from alertRules ").append(request.alertRulesToRemove());
                 }
-                final Set<DeviceAlertRule> deviceAlertRules = deviceAlertRuleRepository.findAllByAlertRuleIn(alertRulesToBeChanged);
-                alertingRulesKafkaProducer.sendTransactionally(getDeviceIdsByAlertRule(deviceAlertRules));
+                alertingRulesKafkaProducer.sendTransactionally(getDeviceIdsByAlertRule(deviceAlertRulesForMessages));
             }
             final Device patchedDevice = patchDevice(request, device.get(), user);
             log.info("Device is updated {}{}", patchedDevice, sb);
@@ -129,33 +129,41 @@ public class DeviceService {
     }
 
     @Transactional
-    public int removeById(@NonNull UUID deviceId) {
+    public int removeById(@NonNull UUID deviceId, @Nullable User user) {
         try {
+            final List<AlertRule> allAlertRules = ofNullable(user)
+                    .map(u  -> alertRulesRepository.findAlertRulesByUsername(u.getUsername()))
+                    .orElse(emptyList());
+            if (!allAlertRules.isEmpty()) {
+                final Set<DeviceAlertRule> allDeviceAlertRules = deviceAlertRuleRepository.findAllByAlertRuleIn(allAlertRules);
+                final List<DeviceAlertRuleKey> keysToRemove = allDeviceAlertRules.stream()
+                        .map(DeviceAlertRule::getId)
+                        .filter(key -> key.getDeviceId().equals(deviceId))
+                        .toList();
+                if (!keysToRemove.isEmpty()) {
+                    final int removedDeviceAlertRules = deviceAlertRuleRepository.removeAllByIds(keysToRemove);
+                    if (removedDeviceAlertRules == 0) {
+                        log.warn("DeviceAlertRules for deviceId={} has already been removed", deviceId);
+                    } else {
+                        log.info("{} deviceAlertRules were removed for deviceId={}", removedDeviceAlertRules, deviceId);
+                    }
+                }
+                final Set<AlertRule> alertRulesToRemove = findAlertRulesWithOnlyOneDeviceId(deviceId, allDeviceAlertRules);
+                if (!alertRulesToRemove.isEmpty()) {
+                    final int removedAlertRules = alertRulesRepository.removeAllByAlertRuleIn(alertRulesToRemove);
+                    if (removedAlertRules == 0) {
+                        log.warn("Alert rules with ids={} has already been removed", alertRulesToRemove);
+                    } else {
+                        log.info("{} alert rules were removed for deviceId={}, alertRuleIds={}", removedAlertRules, deviceId, alertRulesToRemove);
+                    }
+                    alertingRulesKafkaProducer.sendTransactionally();
+                }
+            }
             final int removedDevice = devicesRepository.removeById(deviceId);
             if (removedDevice == 0) {
                 log.warn("Device with id={} has already been removed", deviceId);
             } else {
                 log.info("{} device was removed, deviceId={}", removedDevice, deviceId);
-            }
-            final Set<DeviceAlertRule> deviceAlertRules = deviceAlertRuleRepository.findAllByDeviceId(deviceId);
-            final Set<AlertRule> alertRulesToRemove = findAlertRulesWithOnlyOneDeviceId(deviceId, deviceAlertRules);
-
-            if (!alertRulesToRemove.isEmpty()) {
-                final int removedAlertRules = alertRulesRepository.removeAllByAlertRuleIn(alertRulesToRemove);
-                if (removedAlertRules == 0) {
-                    log.warn("Alert rules with ids={} has already been removed", alertRulesToRemove);
-                } else {
-                    log.info("{} alert rules were removed for deviceId={}, alertRuleIds={}", removedAlertRules, deviceId, alertRulesToRemove);
-                }
-            }
-            final List<DeviceAlertRuleKey> keysToRemove = deviceAlertRules.stream().map(DeviceAlertRule::getId).toList();
-            if (!keysToRemove.isEmpty()) {
-                final int removedDeviceAlertRules = deviceAlertRuleRepository.removeAllByIds(keysToRemove);
-                if (removedDeviceAlertRules == 0) {
-                    log.warn("DeviceAlertRules for deviceId={} has already been removed", deviceId);
-                } else {
-                    log.info("{} deviceAlertRules were removed for deviceId={}", removedDeviceAlertRules, deviceId);
-                }
             }
             return removedDevice;
         } catch (Exception e) {
@@ -232,7 +240,7 @@ public class DeviceService {
 
     private Set<DeviceAlertRule> getDeviceAlertRules(List<AlertRule> alertRules, Device device) {
         return alertRules.stream()
-                .map(alertRule -> new DeviceAlertRule(DeviceAlertRuleKey.of(device.getId(), alertRule.getRuleId()), device, alertRule))
+                .map(alertRule -> new DeviceAlertRule(new DeviceAlertRuleKey(device.getId(), alertRule.getRuleId()), device, alertRule))
                 .collect(toSet());
     }
 
@@ -252,7 +260,7 @@ public class DeviceService {
 
     private List<DeviceAlertRuleKey> getDeviceAlertRuleKeys(UUID deviceId, Set<UUID> alertRuleIds) {
         return alertRuleIds.stream()
-                .map(alertRuleId -> DeviceAlertRuleKey.of(deviceId, alertRuleId))
+                .map(alertRuleId -> new DeviceAlertRuleKey(deviceId, alertRuleId))
                 .toList();
     }
 
@@ -302,7 +310,7 @@ public class DeviceService {
     private List<DeviceAlertRule> getDeviceAlertRules(Device device, List<AlertRule> alertRules) {
         final List<DeviceAlertRule> deviceAlertRules = new ArrayList<>(alertRules.size());
         for (AlertRule alertRule : alertRules) {
-            deviceAlertRules.add(new DeviceAlertRule(DeviceAlertRuleKey.of(device.getId(), alertRule.getRuleId()), device, alertRule));
+            deviceAlertRules.add(new DeviceAlertRule(new DeviceAlertRuleKey(device.getId(), alertRule.getRuleId()), device, alertRule));
         }
         return deviceAlertRules;
     }

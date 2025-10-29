@@ -1,9 +1,10 @@
 CREATE TYPE user_roles AS ENUM ('ADMIN', 'USER');
 CREATE TYPE device_statuses AS ENUM ('ONLINE', 'OFFLINE', 'ERROR', 'MAINTENANCE');
-CREATE TYPE device_types AS ENUM ('THERMOSTAT', 'DOOR_SENSOR', 'SMART_LIGHT','ENERGY_METER', 'SMART_PLUG',
-'TEMPERATURE_SENSOR', 'SOIL_MOISTURE_SENSOR');
-CREATE TYPE device_manufacturers AS ENUM ('SAMSUNG', 'CISCO_SYSTEMS','HONEYWELL','BOSCH', 'SIEMENS', 'PHILIPS_HUE',
- 'FITBIT', 'AMAZON', 'TEXAS_INSTRUMENTS', 'SCHNEIDER_ELECTRIC');
+CREATE TYPE device_types AS ENUM ('THERMOSTAT', 'DOOR_SENSOR', 'SMART_LIGHT','ENERGY_METER', 'SMART_PLUG', 'TEMPERATURE_SENSOR', 'SOIL_MOISTURE_SENSOR');
+CREATE TYPE device_manufacturers AS ENUM ('SAMSUNG', 'CISCO_SYSTEMS','HONEYWELL','BOSCH', 'SIEMENS', 'PHILIPS_HUE', 'FITBIT', 'AMAZON', 'TEXAS_INSTRUMENTS', 'SCHNEIDER_ELECTRIC');
+CREATE type metric_types as ENUM ('VOLTAGE','CURRENT','POWER','TEMPERATURE','ENERGY_CONSUMED','BATTERY_LEVEL','TAMPER','TIME_OUT','PERCENTAGE','HUMIDITY', 'PRESSURE');
+CREATE type severity_levels as ENUM ('INFO','WARNING','CRITICAL');
+CREATE type threshold_types as ENUM ('GREATER_THAN','LESS_THAN','EQUAL_TO','NOT_EQUAL_TO');
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -42,4 +43,22 @@ CREATE TABLE devices (
         REFERENCES users (id)
         ON DELETE SET NULL
         ON UPDATE CASCADE
+);
+
+CREATE TABLE alert_rules(
+	rule_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	metric_type metric_types NOT NULL,
+	threshold_type threshold_types NOT NULL,
+	threshold_value FLOAT,
+	severity_level severity_levels NOT NULL,
+	is_enabled BOOLEAN NOT NULL,
+	username VARCHAR(50)
+);
+
+CREATE TABLE devices_alert_rules (
+    device_id UUID NOT NULL,
+    rule_id UUID NOT NULL,
+    PRIMARY KEY (device_id, rule_id),
+    FOREIGN KEY (device_id) REFERENCES devices(id),
+    FOREIGN KEY (rule_id) REFERENCES alert_rules(rule_id)
 );

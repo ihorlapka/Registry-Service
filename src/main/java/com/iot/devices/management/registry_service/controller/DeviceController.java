@@ -93,7 +93,7 @@ public class DeviceController {
         if (device.isEmpty()) {
             throw new DeviceNotFoundException(deviceId);
         }
-        deviceService.removeById(deviceId);
+        deviceService.removeById(deviceId, owner.orElse(null));
         return ResponseEntity.noContent().build();
     }
 

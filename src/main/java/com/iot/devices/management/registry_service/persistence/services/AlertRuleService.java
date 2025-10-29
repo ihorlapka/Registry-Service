@@ -141,14 +141,14 @@ public class AlertRuleService {
     private List<DeviceAlertRule> getDeviceAlertRules(List<Device> devices, AlertRule alertRule) {
         final List<DeviceAlertRule> deviceAlertRules = new ArrayList<>(devices.size());
         for (Device device : devices) {
-            deviceAlertRules.add(new DeviceAlertRule(DeviceAlertRuleKey.of(device.getId(), alertRule.getRuleId()), device, alertRule));
+            deviceAlertRules.add(new DeviceAlertRule(new DeviceAlertRuleKey(device.getId(), alertRule.getRuleId()), device, alertRule));
         }
         return deviceAlertRules;
     }
 
     private List<DeviceAlertRuleKey> getDeviceAlertRuleKeys(Set<UUID> deviceIds, AlertRule alertRule) {
         return deviceIds.stream()
-                .map(deviceId -> DeviceAlertRuleKey.of(deviceId, alertRule.getRuleId()))
+                .map(deviceId -> new DeviceAlertRuleKey(deviceId, alertRule.getRuleId()))
                 .toList();
     }
 
