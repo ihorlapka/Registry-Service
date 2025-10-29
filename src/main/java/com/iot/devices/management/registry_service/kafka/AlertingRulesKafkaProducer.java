@@ -12,8 +12,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toMap;
 import static com.iot.devices.management.registry_service.controller.errors.AlertRulesException.AlertRuleNotSentException;
 
 @Slf4j
@@ -45,14 +46,17 @@ public class AlertingRulesKafkaProducer {
         }
     }
 
-    public void sendTransactionally(Map<com.iot.devices.management.registry_service.persistence.model.AlertRule, Set<UUID>> deviceIdsByAlertRule) {
-        final Set<AlertRule> mappedAlertRules = deviceIdsByAlertRule.entrySet().stream()
+    public void sendTransactionally(Map<com.iot.devices.management.registry_service.persistence.model.AlertRule, Set<UUID>> deviceIdsByAlertRule,
+                                    Set<UUID> alertRulesToBeRemoved) {
+        final Map<String, AlertRule> alertRulesByRuleId = deviceIdsByAlertRule.entrySet().stream()
                 .map(entry -> mapAlertRule(entry.getKey(), entry.getValue()))
-                .collect(toSet());
-        kafkaProducerRunner.sendTransactionally(mappedAlertRules, AlertRule::getRuleId);
+                .collect(toMap(AlertRule::getRuleId, Function.identity()));
+
+        alertRulesToBeRemoved.forEach(alertRuleIdToRemove -> alertRulesByRuleId.put(alertRuleIdToRemove.toString(), null));
+        kafkaProducerRunner.sendTransactionally(alertRulesByRuleId);
     }
 
-    private AlertRule mapAlertRule(@Nullable com.iot.devices.management.registry_service.persistence.model.AlertRule alertRule, Set<UUID> deviceIds) {
+    private AlertRule mapAlertRule(com.iot.devices.management.registry_service.persistence.model.AlertRule alertRule, Set<UUID> deviceIds) {
         if (alertRule == null) {
             return null;
         }

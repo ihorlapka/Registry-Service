@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.toSet;
 import static com.iot.devices.management.registry_service.controller.errors.AlertRulesException.AlertRuleNotSentException;
@@ -46,23 +45,22 @@ public class KafkaProducerRunner<K, V> {
         return kafkaProducer.send(record, getCallback(value));
     }
 
-    public void sendTransactionally(Set<V> values, Function<V, K> keyFunction) {
+    public void sendTransactionally(Map<K, V> alertRulesByRuleId) {
         try {
             kafkaProducer.beginTransaction();
-            for (V value : values) {
-                final ProducerRecord<K, V> record = new ProducerRecord<>(topic, keyFunction.apply(value), value);
-                kafkaProducer.send(record, getCallback(value));
+            for (Map.Entry<K,V> entry : alertRulesByRuleId.entrySet()) {
+                final ProducerRecord<K, V> record = new ProducerRecord<>(topic, entry.getKey(), entry.getValue());
+                kafkaProducer.send(record, getCallback(entry.getValue()));
             }
             kafkaProducer.commitTransaction();
-            log.info("messages were sent to topic={}, {}", topic, values);
+            log.info("messages were sent to topic={}, {}", topic, alertRulesByRuleId.values());
         } catch (Exception e) {
             try {
                 kafkaProducer.abortTransaction();
             } catch (Exception ex) {
                 log.error("Failed to abort transaction after a general KafkaException", ex);
             }
-            final Set<String> keys = values.stream()
-                    .map(keyFunction)
+            final Set<String> keys = alertRulesByRuleId.keySet().stream()
                     .map(Object::toString)
                     .collect(toSet());
             log.error("Kafka transaction failed and aborted: {}", keys, e);

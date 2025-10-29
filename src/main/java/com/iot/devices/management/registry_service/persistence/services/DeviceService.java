@@ -26,8 +26,7 @@ import java.util.*;
 
 import static com.iot.devices.management.registry_service.persistence.model.enums.DeviceStatus.ONLINE;
 import static java.time.OffsetDateTime.now;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
+import static java.util.Collections.*;
 import static java.util.Optional.ofNullable;
 import static com.iot.devices.management.registry_service.controller.errors.DeviceExceptions.UnableToCreateDeviceException;
 import static com.iot.devices.management.registry_service.controller.errors.DeviceExceptions.*;
@@ -72,7 +71,7 @@ public class DeviceService {
                 final Set<DeviceAlertRule> deviceAlertRules = getDeviceAlertRules(alertRules, savedDevice);
                 final List<DeviceAlertRule> savedDeviceAlertRules = deviceAlertRuleRepository.saveAll(deviceAlertRules);
                 if (!savedDeviceAlertRules.isEmpty() && savedDeviceAlertRules.size() == alertRules.size()) {
-                    alertingRulesKafkaProducer.sendTransactionally(getDeviceIdsByAlertRule(deviceAlertRules));
+                    alertingRulesKafkaProducer.sendTransactionally(getDeviceIdsByAlertRule(deviceAlertRules), emptySet());
                 } else {
                     throw new RuntimeException("Not all of deviceAlertRules were saved");
                 }
@@ -99,7 +98,7 @@ public class DeviceService {
                 final Set<DeviceAlertRule> deviceAlertRulesForMessages = new HashSet<>(alertRulesToBeChanged.size());
 
                 if (request.alertRulesToAdd() != null && !request.alertRulesToAdd().isEmpty()) {
-                    final List<AlertRule> alertRulesToBeAdded = getAlertRulesToBeAdded(request.alertRulesToAdd(), alertRulesToBeChanged);
+                    final List<AlertRule> alertRulesToBeAdded = filterAlertRules(request.alertRulesToAdd(), alertRulesToBeChanged);
                     final List<DeviceAlertRule> storedDevicesAlertRules = deviceAlertRuleRepository.saveAll(getDeviceAlertRules(device.get(), alertRulesToBeAdded));
                     if (storedDevicesAlertRules.isEmpty() || storedDevicesAlertRules.size() != request.alertRulesToAdd().size()) {
                         throw new RuntimeException("Not all deviceAlertRules were persisted!");
@@ -115,6 +114,8 @@ public class DeviceService {
                     } else if (removed != request.alertRulesToRemove().size()) {
                         throw new RuntimeException("Not all devices alert rules were removed!");
                     }
+                    final List<AlertRule> alertRulesToBeRemovedFrom = filterAlertRules(request.alertRulesToRemove(), alertRulesToBeChanged);
+
                     sb.append(", removed from alertRules ").append(request.alertRulesToRemove());
                 }
                 alertingRulesKafkaProducer.sendTransactionally(getDeviceIdsByAlertRule(deviceAlertRulesForMessages));
@@ -136,10 +137,10 @@ public class DeviceService {
                     .orElse(emptyList());
             if (!allAlertRules.isEmpty()) {
                 final Set<DeviceAlertRule> allDeviceAlertRules = deviceAlertRuleRepository.findAllByAlertRuleIn(allAlertRules);
-                final List<DeviceAlertRuleKey> keysToRemove = allDeviceAlertRules.stream()
-                        .map(DeviceAlertRule::getId)
-                        .filter(key -> key.getDeviceId().equals(deviceId))
+                final List<DeviceAlertRule> deviceAlertRulesToRemove = allDeviceAlertRules.stream()
+                        .filter(deviceAlertRule -> deviceAlertRule.getId().getDeviceId().equals(deviceId))
                         .toList();
+                final List<DeviceAlertRuleKey> keysToRemove = deviceAlertRulesToRemove.stream().map(DeviceAlertRule::getId).toList();
                 if (!keysToRemove.isEmpty()) {
                     final int removedDeviceAlertRules = deviceAlertRuleRepository.removeAllByIds(keysToRemove);
                     if (removedDeviceAlertRules == 0) {
@@ -147,6 +148,8 @@ public class DeviceService {
                     } else {
                         log.info("{} deviceAlertRules were removed for deviceId={}", removedDeviceAlertRules, deviceId);
                     }
+
+                    final Map<AlertRule, Set<UUID>> deviceIdsByAlertRule = getDeviceIdsByAlertRule(allDeviceAlertRules);
                 }
                 final Set<AlertRule> alertRulesToRemove = findAlertRulesWithOnlyOneDeviceId(deviceId, allDeviceAlertRules);
                 if (!alertRulesToRemove.isEmpty()) {
@@ -156,8 +159,10 @@ public class DeviceService {
                     } else {
                         log.info("{} alert rules were removed for deviceId={}, alertRuleIds={}", removedAlertRules, deviceId, alertRulesToRemove);
                     }
-                    alertingRulesKafkaProducer.sendTransactionally();
                 }
+                final Set<UUID> removedAlertRules = alertRulesToRemove.stream().map(AlertRule::getRuleId).collect(toSet());
+                final Map<AlertRule, Set<UUID>> deviceIdsByAlertRule = getDeviceIdsByAlertRule(filterDeviceAlertRules(deviceAlertRulesToRemove, removedAlertRules));
+                alertingRulesKafkaProducer.sendTransactionally(deviceIdsByAlertRule, removedAlertRules);
             }
             final int removedDevice = devicesRepository.removeById(deviceId);
             if (removedDevice == 0) {
@@ -233,7 +238,7 @@ public class DeviceService {
         return alertRules.stream().map(AlertRule::getRuleId).collect(toSet());
     }
 
-    private Map<AlertRule, Set<UUID>> getDeviceIdsByAlertRule(Set<DeviceAlertRule> deviceAlertRules) {
+    private Map<AlertRule, Set<UUID>> getDeviceIdsByAlertRule(Collection<DeviceAlertRule> deviceAlertRules) {
         return deviceAlertRules.stream()
                 .collect(groupingBy(DeviceAlertRule::getAlertRule, mapping(dar -> dar.getId().getDeviceId(), toSet())));
     }
@@ -252,10 +257,16 @@ public class DeviceService {
         return Sets.union(getAlertRuleIds(request.alertRulesToAdd()), getAlertRuleIds(request.alertRulesToRemove()));
     }
 
-    private List<AlertRule> getAlertRulesToBeAdded(Set<UUID> alertRulesToBeAddedIds, List<AlertRule> alertRulesToBeChanged) {
-        return alertRulesToBeChanged.stream()
-                .filter(alertRule -> alertRulesToBeAddedIds.contains(alertRule.getRuleId()))
+    private List<AlertRule> filterAlertRules(Set<UUID> neededAlertRulesIds, List<AlertRule> alertRules) {
+        return alertRules.stream()
+                .filter(alertRule -> neededAlertRulesIds.contains(alertRule.getRuleId()))
                 .toList();
+    }
+
+    private Set<DeviceAlertRule> filterDeviceAlertRules(List<DeviceAlertRule> deviceAlertRulesToRemove, Set<UUID> removedAlertRules) {
+        return deviceAlertRulesToRemove.stream()
+                .filter(dar -> !removedAlertRules.contains(dar.getId().getRuleId()))
+                .collect(toSet());
     }
 
     private List<DeviceAlertRuleKey> getDeviceAlertRuleKeys(UUID deviceId, Set<UUID> alertRuleIds) {
