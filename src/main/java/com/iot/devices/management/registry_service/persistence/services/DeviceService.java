@@ -148,8 +148,6 @@ public class DeviceService {
                     } else {
                         log.info("{} deviceAlertRules were removed for deviceId={}", removedDeviceAlertRules, deviceId);
                     }
-
-                    final Map<AlertRule, Set<UUID>> deviceIdsByAlertRule = getDeviceIdsByAlertRule(allDeviceAlertRules);
                 }
                 final Set<AlertRule> alertRulesToRemove = findAlertRulesWithOnlyOneDeviceId(deviceId, allDeviceAlertRules);
                 if (!alertRulesToRemove.isEmpty()) {
