@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Optional.ofNullable;
 import static com.iot.devices.management.registry_service.controller.errors.DeviceExceptions.DeviceNotFoundException;
@@ -42,7 +43,7 @@ public class AlertRuleService {
             final AlertRule alertRule = alertRulesRepository.save(mapNewAlertRule(request, user));
             final List<DeviceAlertRule> storedDevicesAlertRules = deviceAlertRuleRepository.saveAll(getDeviceAlertRules(devices, alertRule));
             if (!storedDevicesAlertRules.isEmpty() && storedDevicesAlertRules.size() == devices.size()) {
-                alertRulesProducer.sendOneBlocking(alertRule.getRuleId(), alertRule, request.deviceIds());
+                alertRulesProducer.sendTransactionally(Map.of(alertRule, request.deviceIds()), emptySet());
             } else {
                 throw new RuntimeException("Not all deviceAlertRules were persisted!");
             }
@@ -83,7 +84,7 @@ public class AlertRuleService {
             }
             final Set<DeviceAlertRule> deviceAlertRules = deviceAlertRuleRepository.findByAlertRule(alertRule.get());
             final AlertRule alertRulePatched = patchAlertRule(request, alertRule.get(), user);
-            alertRulesProducer.sendOneBlocking(alertRule.get().getRuleId(), alertRulePatched, getDeviceIds(deviceAlertRules));
+            alertRulesProducer.sendTransactionally(Map.of(alertRulePatched, getDeviceIds(deviceAlertRules)), emptySet());
             log.info("AlertRule is updated{}", sb);
             return alertRulePatched;
         } catch (Exception e) {
@@ -97,12 +98,6 @@ public class AlertRuleService {
         try {
             final Optional<AlertRule> alertRule = alertRulesRepository.findById(ruleId);
             if (alertRule.isPresent()) {
-                final int removedAlertRule = alertRulesRepository.removeById(ruleId);
-                if (removedAlertRule == 0) {
-                    log.warn("AlertRule with id={} has already been removed", ruleId);
-                } else {
-                    log.info("{} alertRule was removed, alertRuleId={}", removedAlertRule, ruleId);
-                }
                 final Set<DeviceAlertRule> deviceAlertRules = deviceAlertRuleRepository.findByAlertRule(alertRule.get());
                 if (!deviceAlertRules.isEmpty()) {
                     final int removedDeviceAlertRules = deviceAlertRuleRepository.removeAllByIds(deviceAlertRules.stream().map(DeviceAlertRule::getId).toList());
@@ -112,7 +107,13 @@ public class AlertRuleService {
                         log.info("{} deviceAlertRules were removed for alertRuleId={}", removedDeviceAlertRules, ruleId);
                     }
                 }
-                alertRulesProducer.sendOneBlocking(alertRule.get().getRuleId(), null, emptySet());
+                final int removedAlertRule = alertRulesRepository.removeById(ruleId);
+                if (removedAlertRule == 0) {
+                    log.warn("AlertRule with id={} has already been removed", ruleId);
+                } else {
+                    log.info("{} alertRule was removed, alertRuleId={}", removedAlertRule, ruleId);
+                }
+                alertRulesProducer.sendTransactionally(emptyMap(), Set.of(ruleId));
             } else {
                 log.warn("No alert rule present for removing, alertRuleId={}", ruleId);
             }
