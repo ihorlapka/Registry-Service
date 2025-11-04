@@ -21,6 +21,7 @@ import com.iot.devices.management.registry_service.persistence.repos.DevicesRepo
 import com.iot.devices.management.registry_service.persistence.repos.UsersRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,6 +124,13 @@ public class DeviceAndAlertRulesServicesTest {
                     UserRole.USER, now(), now(), now(), ImmutableSet.of(), ImmutableList.of());
             usersRepository.save(USER);
         }
+    }
+
+    @AfterEach
+    void cleanUp() {
+        deviceAlertRuleRepository.deleteAll();
+        alertRulesRepository.deleteAll();
+        usersRepository.deleteAll();
     }
 
     private final Map<String, com.iot.alerts.AlertRule> messagesByKey = new HashMap<>();

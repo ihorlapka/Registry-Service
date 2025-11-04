@@ -62,3 +62,17 @@ CREATE TABLE devices_alert_rules (
     FOREIGN KEY (device_id) REFERENCES devices(id),
     FOREIGN KEY (rule_id) REFERENCES alert_rules(rule_id)
 );
+
+CREATE TABLE tokens (
+	id UUID primary key default gen_random_uuid(),
+	token VARCHAR(255) not null,
+	revoked BOOLEAN,
+	expired BOOLEAN,
+	user_id UUID,
+	refresh BOOLEAN,
+	CONSTRAINT fk_user
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);

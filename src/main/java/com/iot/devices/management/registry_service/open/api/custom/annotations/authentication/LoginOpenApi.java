@@ -1,7 +1,6 @@
-package com.iot.devices.management.registry_service.open.api.custom.annotations.users;
+package com.iot.devices.management.registry_service.open.api.custom.annotations.authentication;
 
-
-import com.iot.devices.management.registry_service.controller.dto.UserDto;
+import com.iot.devices.management.registry_service.controller.util.AuthenticationResponse;
 import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,31 +18,32 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "Remove user by Id",
-        description = "Remove user from the system",
+        summary = "User Authentication",
+        description = "Login user to the system",
         responses = {
                 @ApiResponse(
-                        responseCode = "204",
-                        description = "User is removed",
+                        responseCode = "200",
+                        description = "User is authenticated",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserDto.class))
+                                schema = @Schema(implementation = AuthenticationResponse.class))
                 ),
                 @ApiResponse(
-                        responseCode = "404",
-                        description = "User is not found",
+                        responseCode = "403",
+                        description = "Create alert rule request is invalid",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "UserNotFoundExample",
-                                        summary = "User is not found",
+                                        name = "AuthenticationException",
+                                        summary = "Username or password is incorrect",
                                         value = """
                                                 {
-                                                    "status": 400,
-                                                    "errorMessage": "User with id: 1 not found.",
-                                                    "detail": "Unable to find user!",
-                                                    "uri": "/api/v1/users
+                                                    "status": "FORBIDDEN",
+                                                    "errorMessage": "Bad credentials",
+                                                    "detail": "Unable to authenticate user!",
+                                                    "uri": "uri=/iot-registry/api/v1/authentication/login",
+                                                    "validationErrors": {}
                                                 }
                                                 """
                                 )
@@ -60,10 +60,10 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                                         summary = "Server is down",
                                         value = """
                                                 {
-                                                    "status": 500,
-                                                    "errorMessage": "Could not open JDBC Connection for transaction",
-                                                    "detail": "Unable to obtain JDBC Connection",
-                                                    "uri": "/api/v1/users
+                                                  "status": 500,
+                                                  "errorMessage": "Could not open JDBC Connection for transaction",
+                                                  "detail": "Unable to obtain JDBC Connection",
+                                                  "uri": "/api/v1/alertRules
                                                 }
                                                 """
                                 )
@@ -72,5 +72,5 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
         }
 )
-public @interface RemoveUserByIdOpenApi {
+public @interface LoginOpenApi {
 }

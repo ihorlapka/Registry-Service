@@ -5,6 +5,7 @@ import lombok.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -74,7 +75,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         final ErrorResponse response = ErrorResponse.of(
                 NOT_FOUND,
                 ex.getMessage(),
-                "Unable to find alertRule!",
+                "Unable to find alert rule!",
                 URI.create(request.getDescription(false)),
                 emptyMap());
         return new ResponseEntity<>(response, NOT_FOUND);
@@ -85,10 +86,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         final ErrorResponse response = ErrorResponse.of(
                 NOT_FOUND,
                 ex.getMessage(),
-                "Unable to send alertRule to telemetries events processor!",
+                "Unable to send alert rule to telemetries events processor!",
                 URI.create(request.getDescription(false)),
                 emptyMap());
         return new ResponseEntity<>(response, NOT_FOUND);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationExceptionException(AuthenticationException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
+                FORBIDDEN,
+                ex.getMessage(),
+                "Authentication exception!",
+                URI.create(request.getDescription(false)),
+                emptyMap());
+        return new ResponseEntity<>(response, FORBIDDEN);
     }
 
     @ExceptionHandler(UnableToCreateAlertRuleException.class)
@@ -96,7 +108,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         final ErrorResponse response = ErrorResponse.of(
                 INTERNAL_SERVER_ERROR,
                 ex.getMessage(),
-                "Unexpected exception occurred while creating alertRule!",
+                "Unexpected exception occurred while creating alert rule!",
                 URI.create(request.getDescription(false)),
                 emptyMap());
         return new ResponseEntity<>(response, INTERNAL_SERVER_ERROR);

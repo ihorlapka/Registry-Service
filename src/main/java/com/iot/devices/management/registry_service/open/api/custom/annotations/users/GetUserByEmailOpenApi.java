@@ -41,9 +41,9 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                                         value = """
                                                 {
                                                     "status": 400,
-                                                    "errorMessage": "User with email: someuseremail@gmail.com is not found."
-                                                    "detail": "Unable to find user!"
-                                                    "uri": "/api/v1/users,
+                                                    "errorMessage": "User with email: someuseremail@gmail.com is not found.",
+                                                    "detail": "Unable to find user!",
+                                                    "uri": "/api/v1/users
                                                 }
                                                 """
                                 )
@@ -60,9 +60,9 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                                         summary = "Server is down",
                                         value = """
                                                 {
-                                                    "status": 500 ,
-                                                    "errorMessage": "Could not open JDBC Connection for transaction"
-                                                    "detail": "Unable to obtain JDBC Connection"
+                                                    "status": 500,
+                                                    "errorMessage": "Could not open JDBC Connection for transaction",
+                                                    "detail": "Unable to obtain JDBC Connection",
                                                     "uri": "/api/v1/users
                                                 }
                                                 """

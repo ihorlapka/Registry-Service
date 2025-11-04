@@ -1,6 +1,6 @@
-package com.iot.devices.management.registry_service.open.api.custom.annotations.devices;
+package com.iot.devices.management.registry_service.open.api.custom.annotations.alert_rules;
 
-import com.iot.devices.management.registry_service.controller.dto.DeviceDto;
+import com.iot.devices.management.registry_service.controller.dto.AlertRuleDto;
 import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,19 +18,19 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "Create a new device",
-        description = "Adds a new device to user",
+        summary = "Create a new alert rule",
+        description = "Adds a new alert rule to device",
         responses = {
                 @ApiResponse(
                         responseCode = "201",
-                        description = "Device Created",
+                        description = "Alert rule created",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = DeviceDto.class))
+                                schema = @Schema(implementation = AlertRuleDto.class))
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "Create Device Request is invalid",
+                        description = "Create alert rule request is invalid",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class),
@@ -40,11 +40,11 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                                         value = """
                                                 {
                                                     "status": 400,
-                                                    "errorMessage": "Validation failed for argument [0]...",
+                                                    "errorMessage": "Param deviceIds can not be empty!",
                                                     "detail": "Validation failed for one or more fields!",
-                                                    "uri": "/api/v1/devices,
+                                                    "uri": "/api/v1/alertRules,
                                                     "validationErrors": {
-                                                        "name": "device name is required"
+                                                        "name": "alert rule severity is required"
                                                     }
                                                 }
                                                 """
@@ -53,19 +53,19 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                 ),
                 @ApiResponse(
                         responseCode = "409",
-                        description = "Device is already present",
+                        description = "Failed to create alert rule",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "DuplicatedDeviceExample",
-                                        summary = "Device already exists",
+                                        name = "UnableToCreateAlertRuleException",
+                                        summary = "Unable to create AlertRule, request",
                                         value = """
                                                 {
                                                     "status": 400,
-                                                    "errorMessage": "Device with serial number: someSerialNumber123 already exists.",
-                                                    "detail": "Duplicate device!",
-                                                    "uri": "/api/v1/devices
+                                                    "errorMessage": "Unable to send alert rule with ruleId=24d33306-e6bb-4ae7-b071-db0425fbaa60",
+                                                    "detail": "Unexpected exception occurred while creating alertRule!",
+                                                    "uri": "/api/v1/alertRules
                                                 }
                                                 """
                                 )
@@ -73,19 +73,19 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "User is not found for device",
+                        description = "Device is not found for alert rule",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "UserNotFoundExample",
-                                        summary = "User is not found for device",
+                                        name = "DeviceNotFoundExample",
+                                        summary = "Device is not found for alert rule",
                                         value = """
                                                 {
                                                     "status": 400,
-                                                    "errorMessage": "User with id: 1 not found.",
-                                                    "detail": "Unable to find user!",
-                                                    "uri": "/api/v1/users
+                                                    "errorMessage": "No devices found for given Ids: [24d33306-e6bb-4ae7-b071-db0425fbaa60]",
+                                                    "detail": "Unable to find device!",
+                                                    "uri": "/api/v1/alertRules
                                                 }
                                                 """
                                 )
@@ -105,7 +105,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                                                     "status": 500,
                                                     "errorMessage": "Could not open JDBC Connection for transaction",
                                                     "detail": "Unable to obtain JDBC Connection",
-                                                    "uri": "/api/v1/devices
+                                                    "uri": "/api/v1/alertRules
                                                 }
                                                 """
                                 )
@@ -114,5 +114,5 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
         }
 )
-public @interface CreateDeviceOpenApi {
+public @interface CreateAlertRuleOpenApi {
 }

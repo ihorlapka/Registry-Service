@@ -1,6 +1,6 @@
-package com.iot.devices.management.registry_service.open.api.custom.annotations.users;
+package com.iot.devices.management.registry_service.open.api.custom.annotations.authentication;
 
-import com.iot.devices.management.registry_service.controller.dto.UserDto;
+import com.iot.devices.management.registry_service.controller.util.AuthenticationResponse;
 import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,54 +18,53 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "Update existing user",
-        description = "Updates present user in the system",
+        summary = "Refresh token",
+        description = "Refresh JWT token for user",
         responses = {
                 @ApiResponse(
                         responseCode = "200",
-                        description = "User Updated",
+                        description = "Token is refreshed",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserDto.class))
+                                schema = @Schema(implementation = AuthenticationResponse.class))
                 ),
                 @ApiResponse(
-                        responseCode = "400",
-                        description = "Patch User Request is invalid",
+                        responseCode = "403",
+                        description = "Create alert rule request is invalid",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "Bad request",
-                                        summary = "Request is invalid",
+                                        name = "AuthenticationException",
+                                        summary = "Username or password is incorrect",
                                         value = """
                                                 {
-                                                    "status": 400,
-                                                    "errorMessage": "Validation failed for argument [0]...",
-                                                    "detail": "Validation failed for one or more fields!",
-                                                    "uri": "/api/v1/users,
-                                                    "validationErrors": {
-                                                        "username": "id is required"
-                                                    }
+                                                    "status": "FORBIDDEN",
+                                                    "errorMessage": "Bad credentials",
+                                                    "detail": "Unable to authenticate user!",
+                                                    "uri": "uri=/iot-registry/api/v1/authentication/login",
+                                                    "validationErrors": {}
                                                 }
                                                 """
                                 )
                         )
                 ),
                 @ApiResponse(
-                        responseCode = "404",
-                        description = "User is not found",
+                        responseCode = "403",
+                        description = "Create alert rule request is invalid",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "UserNotFoundExample",
-                                        summary = "User is not found",
+                                        name = "AuthenticationHeaderException",
+                                        summary = "Authentication header is missed or not valid",
                                         value = """
                                                 {
-                                                    "status": 400,
-                                                    "errorMessage": "User with id: 1 not found.",
-                                                    "detail": "Unable to find user!",
-                                                    "uri": "/api/v1/users
+                                                    "status": "FORBIDDEN",
+                                                    "errorMessage": "Authentication header is invalid",
+                                                    "detail": "Authentication exception!",
+                                                    "uri": "uri=/iot-registry/api/v1/authentication/refresh-token",
+                                                    "validationErrors": {}
                                                 }
                                                 """
                                 )
@@ -82,10 +81,13 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                                         summary = "Server is down",
                                         value = """
                                                 {
-                                                    "status": 500,
-                                                    "errorMessage": "Could not open JDBC Connection for transaction",
-                                                    "detail": "Unable to obtain JDBC Connection",
-                                                    "uri": "/api/v1/users
+                                                  "status": "INTERNAL_SERVER_ERROR",
+                                                  "errorMessage": "JWT signature does not match locally computed signature. JWT validity cannot be asserted and should not be trusted.",
+                                                  "detail": "Server error!",
+                                                  "uri": "uri=/iot-registry/api/v1/authentication/refresh-token",
+                                                  "validationErrors": {
+                                                
+                                                  }
                                                 }
                                                 """
                                 )
@@ -94,5 +96,5 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
         }
 )
-public @interface UpdateUserOpenApi {
+public @interface RefreshTokenOpenApi {
 }

@@ -1,6 +1,6 @@
-package com.iot.devices.management.registry_service.open.api.custom.annotations.users;
+package com.iot.devices.management.registry_service.open.api.custom.annotations.alert_rules;
 
-import com.iot.devices.management.registry_service.controller.dto.UserDto;
+import com.iot.devices.management.registry_service.controller.dto.DeviceDto;
 import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,54 +18,31 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "Update existing user",
-        description = "Updates present user in the system",
+        summary = "Get alert rule by Id",
+        description = "Get present alert rule in the system",
         responses = {
                 @ApiResponse(
                         responseCode = "200",
-                        description = "User Updated",
+                        description = "Alert rule is found",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = UserDto.class))
-                ),
-                @ApiResponse(
-                        responseCode = "400",
-                        description = "Patch User Request is invalid",
-                        content = @Content(
-                                mediaType = APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = ErrorResponse.class),
-                                examples = @ExampleObject(
-                                        name = "Bad request",
-                                        summary = "Request is invalid",
-                                        value = """
-                                                {
-                                                    "status": 400,
-                                                    "errorMessage": "Validation failed for argument [0]...",
-                                                    "detail": "Validation failed for one or more fields!",
-                                                    "uri": "/api/v1/users,
-                                                    "validationErrors": {
-                                                        "username": "id is required"
-                                                    }
-                                                }
-                                                """
-                                )
-                        )
+                                schema = @Schema(implementation = DeviceDto.class))
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "User is not found",
+                        description = "Alert rule is not found",
                         content = @Content(
                                 mediaType = APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "UserNotFoundExample",
-                                        summary = "User is not found",
+                                        name = "AlertRuleNotFoundExample",
+                                        summary = "Alert rule is not found",
                                         value = """
                                                 {
                                                     "status": 400,
-                                                    "errorMessage": "User with id: 1 not found.",
-                                                    "detail": "Unable to find user!",
-                                                    "uri": "/api/v1/users
+                                                    "errorMessage": "Alert rule with id: 24d33306-e6bb-4ae7-b071-db0425fbaa60 not found",
+                                                    "detail": "Unable to find alertRule!",
+                                                    "uri": "/api/v1/alertRules
                                                 }
                                                 """
                                 )
@@ -85,7 +62,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
                                                     "status": 500,
                                                     "errorMessage": "Could not open JDBC Connection for transaction",
                                                     "detail": "Unable to obtain JDBC Connection",
-                                                    "uri": "/api/v1/users
+                                                    "uri": "/api/v1/devices
                                                 }
                                                 """
                                 )
@@ -94,5 +71,5 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
         }
 )
-public @interface UpdateUserOpenApi {
+public @interface GetAlertRuleByIdOpenApi {
 }
