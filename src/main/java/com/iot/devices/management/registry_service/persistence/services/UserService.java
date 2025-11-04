@@ -21,7 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -91,7 +91,7 @@ public class UserService {
     }
 
     @Transactional
-    public int updateLastLoginTime(UUID userId, Instant loginTime) {
+    public int updateLastLoginTime(UUID userId, OffsetDateTime loginTime) {
         return usersRepository.updateLastLoginTime(userId, loginTime);
     }
 

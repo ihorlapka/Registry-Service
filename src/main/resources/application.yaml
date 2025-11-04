@@ -17,7 +17,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
-      pool-name: RegistryServiceHikariPool
+      pool-name: RegistryServiceHikariCP
       minimum-idle: 5
       maximum-pool-size: 20
       auto-commit: true
@@ -106,7 +106,7 @@ kafka:
       executor-termination-timeout-ms: 5000
       properties:
         bootstrap.servers: localhost:9092
-        key.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
         value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
         schema.registry.url: http://localhost:8081
         transactional.id: alert-rules-transactional-producer-0
@@ -121,6 +121,7 @@ kafka:
         delivery.timeout.ms: 30000
         client.id: alerting-rules-producer
         auto.register.schemas: false
+        value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
 parallel.patcher:
   threads.amount: 10
   threads.virtual: true

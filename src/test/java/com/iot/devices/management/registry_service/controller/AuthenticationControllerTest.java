@@ -21,6 +21,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 import static com.iot.devices.management.registry_service.security.JwtAuthentificationFilter.TOKEN_PREFIX;
@@ -94,7 +95,7 @@ class AuthenticationControllerTest {
         when(tokenRepository.findByToken(anyString())).thenReturn(Optional.of(Token.builder()
                 .token(jwt).user(USER).revoked(false).expired(false).refresh(false).build()));
         when(tokenRepository.removeAllByUserId(any())).thenReturn(2);
-        when(userService.updateLastLoginTime(eq(USER_ID), any(Instant.class))).thenReturn(1);
+        when(userService.updateLastLoginTime(eq(USER_ID), any(OffsetDateTime.class))).thenReturn(1);
         mockMvc.perform(post("/api/v1/authentication/login")
                         .contentType(APPLICATION_JSON)
                         .content(json))
@@ -108,7 +109,7 @@ class AuthenticationControllerTest {
         verify(userService).findByUsername(any());
         verify(authenticationManager).authenticate(any());
         verify(tokenRepository, times(2)).saveAll(anyList());
-        verify(userService).updateLastLoginTime(eq(USER_ID), any(Instant.class));
+        verify(userService).updateLastLoginTime(eq(USER_ID), any(OffsetDateTime.class));
         verify(tokenRepository).findByToken(anyString());
         verify(tokenRepository).removeAllByUserId(any());
     }

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 import static com.iot.devices.management.registry_service.controller.errors.UserExceptions.*;
@@ -49,7 +49,7 @@ public class AuthenticationController { //todo: add open api!
                 throw new UserNotFoundException(request.username());
             }
             final AuthenticationResponse authenticationResponse = jwtService.generateTokens(user.get());
-            int rows = userService.updateLastLoginTime(user.get().getId(), Instant.now());
+            int rows = userService.updateLastLoginTime(user.get().getId(), OffsetDateTime.now());
             if (rows == 1) {
                 log.info("Updated login time to user: {}, id: {}", user.get().getUsername(), user.get().getId());
             } else {

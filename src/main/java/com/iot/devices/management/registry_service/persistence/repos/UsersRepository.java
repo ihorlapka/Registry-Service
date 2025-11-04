@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,5 +25,5 @@ public interface UsersRepository extends JpaRepository<User, UUID> {
 
     @Modifying
     @Query("UPDATE User u SET u.lastLoginAt = :loginTime WHERE u.id = :id")
-    int updateLastLoginTime(@Param("id") UUID id, @Param("loginTime") Instant loginTime);
+    int updateLastLoginTime(@Param("id") UUID id, @Param("loginTime") OffsetDateTime loginTime);
 }
