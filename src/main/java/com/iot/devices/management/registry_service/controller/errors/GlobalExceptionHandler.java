@@ -93,11 +93,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthenticationExceptionException(AuthenticationException ex, WebRequest request) {
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex, WebRequest request) {
         final ErrorResponse response = ErrorResponse.of(
                 FORBIDDEN,
                 ex.getMessage(),
                 "Authentication exception!",
+                URI.create(request.getDescription(false)),
+                emptyMap());
+        return new ResponseEntity<>(response, FORBIDDEN);
+    }
+
+    @ExceptionHandler(PermissionDeniedException.class)
+    public ResponseEntity<ErrorResponse> handlePermissionDeniedException(PermissionDeniedException ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
+                FORBIDDEN,
+                ex.getMessage(),
+                "Permission denied!",
                 URI.create(request.getDescription(false)),
                 emptyMap());
         return new ResponseEntity<>(response, FORBIDDEN);

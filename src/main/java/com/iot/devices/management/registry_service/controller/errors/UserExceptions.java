@@ -20,8 +20,8 @@ public class UserExceptions {
     }
 
     public static class PermissionDeniedException extends RuntimeException {
-        public PermissionDeniedException(String message) {
-            super(message);
+        public PermissionDeniedException(String username) {
+            super("Permission denied for user: " + username);
         }
     }
 }

@@ -29,7 +29,7 @@ import java.util.UUID;
 import static com.iot.devices.management.registry_service.controller.errors.DeviceExceptions.*;
 import static com.iot.devices.management.registry_service.controller.util.Utils.*;
 import static java.util.Optional.ofNullable;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static com.iot.devices.management.registry_service.controller.errors.UserExceptions.PermissionDeniedException;
 
 @Slf4j
 @RestController
@@ -46,7 +46,7 @@ public class DeviceController {
     public ResponseEntity<DeviceDto> createDevice(@RequestBody @Valid CreateDeviceRequest request, Authentication auth) {
         final Optional<User> owner = loadUser(request.ownerId());
         if (!hasPermission(auth, owner)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         final Optional<Device> device = deviceService.findBySerialNumber(request.serialNumber());
         if (device.isPresent()) {
@@ -62,7 +62,7 @@ public class DeviceController {
     public ResponseEntity<DeviceDto> patchDevice(@RequestBody @Valid PatchDeviceRequest request, Authentication auth) {
         final Optional<User> owner = loadUser(request.ownerId());
         if (!hasPermission(auth, owner)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         final Device patched = deviceService.patch(request, owner.orElse(null));
         return ResponseEntity.ok(mapDevice(patched));
@@ -75,7 +75,7 @@ public class DeviceController {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
         final Optional<User> owner = device.map(Device::getOwner);
         if (!hasPermission(auth, owner)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         return device.map(Utils::mapDevice)
                 .map(ResponseEntity::ok)
@@ -88,7 +88,7 @@ public class DeviceController {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
         final Optional<User> owner = device.map(Device::getOwner);
         if (!hasPermission(auth, owner)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         if (device.isEmpty()) {
             throw new DeviceNotFoundException(deviceId);

@@ -29,18 +29,4 @@ public class AlertRulesException {
             super(msg, e);
         }
     }
-
-    public static class UnableToPatchAlertRuleException extends RuntimeException {
-
-        public UnableToPatchAlertRuleException(String msg, Exception e) {
-            super(msg, e);
-        }
-    }
-
-    public static class UnableToRemoveAlertRuleException extends RuntimeException {
-
-        public UnableToRemoveAlertRuleException(String msg, Exception e) {
-            super(msg, e);
-        }
-    }
 }

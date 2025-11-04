@@ -23,7 +23,7 @@ import java.util.*;
 
 import static com.iot.devices.management.registry_service.controller.util.Utils.*;
 import static com.iot.devices.management.registry_service.persistence.model.enums.UserRole.*;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static com.iot.devices.management.registry_service.controller.errors.UserExceptions.PermissionDeniedException;
 
 @Slf4j
 @RestController
@@ -60,7 +60,7 @@ public class UserController {
     public ResponseEntity<UserDto> patchUser(@RequestBody @Valid PatchUserRequest request, Authentication auth) {
         final Optional<User> user = userService.findByUsername(request.username());
         if (!hasPatchPermission(auth, user, request)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         if (user.isEmpty()) {
             throw new UserNotFoundException(request.username());
@@ -116,7 +116,7 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable UUID userId, Authentication auth) {
         final Optional<User> user = userService.findByUserId(userId);
         if (!hasPermission(auth, user)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         if (user.isEmpty()) {
             throw new UserNotFoundException(userId);

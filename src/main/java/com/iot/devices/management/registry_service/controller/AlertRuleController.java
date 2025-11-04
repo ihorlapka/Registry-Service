@@ -22,7 +22,7 @@ import java.util.UUID;
 
 import static com.iot.devices.management.registry_service.controller.util.Utils.*;
 import static java.util.Optional.ofNullable;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static com.iot.devices.management.registry_service.controller.errors.UserExceptions.PermissionDeniedException;
 
 @RestController
 @RequestMapping("/api/v1/alertRules")
@@ -34,12 +34,12 @@ public class AlertRuleController {
     private final UserService userService;
 
 
-    @GetMapping("/userRules/{id}")
+    @GetMapping("/{id}")
     @GetAlertRuleByIdOpenApi
     public ResponseEntity<AlertRuleDto> getAlertRuleById(@PathVariable("id") UUID id, Authentication auth) {
         final Optional<User> owner = loadUser(auth.getName());
         if (!hasPermission(auth, owner)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         final AlertRule alertRule = alertRuleService.findAlertRuleById(id);
         return ResponseEntity.ok(mapAlertRuleToDto(alertRule));
@@ -66,7 +66,7 @@ public class AlertRuleController {
     public ResponseEntity<AlertRuleDto> createRule(@RequestBody @Valid CreateAlertRuleRequest request, Authentication auth) {
         final Optional<User> owner = loadUser(request.username());
         if (!hasPermission(auth, owner)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         final AlertRule saved = alertRuleService.saveAndSendMessage(request, owner.orElse(null));
         return ResponseEntity.created(getLocation(saved.getRuleId()))
@@ -78,7 +78,7 @@ public class AlertRuleController {
     public ResponseEntity<AlertRuleDto> patchRule(@RequestBody @Valid PatchAlertRuleRequest request, Authentication auth) {
         final Optional<User> owner = loadUser(request.username());
         if (!hasPermission(auth, owner)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         final AlertRule saved = alertRuleService.patchAndSendMessage(request, owner.orElse(null));
         return ResponseEntity.created(getLocation(saved.getRuleId()))
@@ -90,7 +90,7 @@ public class AlertRuleController {
     public ResponseEntity<Void> removeRule(@PathVariable("ruleId") UUID ruleId, Authentication auth) {
         final Optional<User> owner = loadUser(auth.getName());
         if (!hasPermission(auth, owner)) {
-            return ResponseEntity.status(FORBIDDEN).build();
+            throw new PermissionDeniedException(auth.getName());
         }
         alertRuleService.removeAndSendTombstone(ruleId);
         return ResponseEntity.noContent().build();
