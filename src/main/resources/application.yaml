@@ -80,7 +80,7 @@ kafka:
       max.poll.interval: 300000
       fetch.min.bytes: 128
       fetch.max.wait.ms: 5000
-      value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
+      value.subject.name.strategy: io.confluent.kafka.serializers.subject.RecordNameStrategy
   producer:
     dead-letter:
       topic: dead-letter-telemetries-updates
@@ -121,7 +121,7 @@ kafka:
         delivery.timeout.ms: 30000
         client.id: alerting-rules-producer
         auto.register.schemas: false
-        value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
+        value.subject.name.strategy: io.confluent.kafka.serializers.subject.RecordNameStrategy
 parallel.patcher:
   threads.amount: 10
   threads.virtual: true
