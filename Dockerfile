@@ -4,8 +4,7 @@ COPY . /workspace
 COPY pom.xml .
 COPY src /app/src
 COPY iot-nexus.crt /usr/local/share/ca-certificates/iot-nexus.crt
-RUN update-ca-certificates && \
-    echo "Attempting to import iot-nexus.crt into cacerts..." && \
+RUN echo "Attempting to import iot-nexus.crt into cacerts..." && \
     keytool -import -alias iot-nexus-ca \
         -file /usr/local/share/ca-certificates/iot-nexus.crt \
         -keystore $JAVA_HOME/lib/security/cacerts \
@@ -17,8 +16,7 @@ RUN mvn -B -DskipTests -U package
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY iot-nexus.crt /usr/local/share/ca-certificates/iot-nexus.crt
-RUN update-ca-certificates && \
-    echo "Attempting to import iot-nexus.crt into cacerts..." && \
+RUN echo "Attempting to import iot-nexus.crt into cacerts..." && \
     keytool -import -alias iot-nexus-ca \
         -file /usr/local/share/ca-certificates/iot-nexus.crt \
         -keystore $JAVA_HOME/lib/security/cacerts \
