@@ -9,7 +9,7 @@ RUN update-ca-certificates &&  \
     -file /usr/local/share/ca-certificates/iot-nexus.crt  \
     -keystore $JAVA_HOME/lib/security/cacerts  \
     -storepass changeit -noprompt
-RUN --mount=type=cache,target=/root/.m2 mvn -B -DskipTests package
+RUN --mount=type=cache,target=/root/.m2 mvn -B -DskipTests -U package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
