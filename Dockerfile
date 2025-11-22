@@ -3,6 +3,8 @@ WORKDIR /app
 COPY . /workspace
 COPY pom.xml .
 COPY src /app/src
+COPY /usr/local/share/ca-certificates/iot-nexus.crt /usr/local/share/ca-certificates/iot-nexus.crt
+RUN update-ca-certificates
 RUN --mount=type=cache,target=/root/.m2 mvn -B -DskipTests package
 
 FROM eclipse-temurin:21-jre
