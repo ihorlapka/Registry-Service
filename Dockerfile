@@ -5,6 +5,7 @@ COPY pom.xml .
 COPY src /app/src
 COPY ca.crt /usr/local/share/ca-certificates/ca.crt
 RUN update-ca-certificates &&  \
+    ls -alt \
     keytool -import -alias iot-nexus-ca  \
     -file /usr/local/share/ca-certificates/ca.crt  \
     -keystore $JAVA_HOME/lib/security/cacerts  \
@@ -15,6 +16,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY ca.crt /usr/local/share/ca-certificates/ca.crt
 RUN update-ca-certificates &&  \
+    ls -alt \
     keytool -import -alias iot-nexus-ca  \
     -file /usr/local/share/ca-certificates/ca.crt  \
     -keystore $JAVA_HOME/lib/security/cacerts  \
