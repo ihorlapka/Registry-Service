@@ -3,11 +3,11 @@ WORKDIR /app
 COPY pom.xml .
 COPY nexus-full-chain.pem /usr/local/share/ca-certificates/nexus-full-chain.pem
 RUN keytool -importcert -noprompt \
-    -alias nexus-ca \
-    -file /usr/local/share/ca-certificates/nexus-full-chain.pem \
-    -keystore $JAVA_HOME/lib/security/cacerts \
-    -storepass changeit \
-    -cacerts
+        -alias nexus-ca \
+        -file /usr/local/share/ca-certificates/nexus-full-chain.pem \
+        -cacerts \
+        -storepass changeit
+
 RUN update-ca-certificates
 COPY src /app/src
 RUN mvn -B -U -DskipTests package
@@ -16,11 +16,11 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY nexus-full-chain.pem /usr/local/share/ca-certificates/nexus-full-chain.pem
 RUN keytool -importcert -noprompt \
-    -alias nexus-ca \
-    -file /usr/local/share/ca-certificates/nexus-full-chain.pem \
-    -keystore $JAVA_HOME/lib/security/cacerts \
-    -storepass changeit \
-    -cacerts
+        -alias nexus-ca \
+        -file /usr/local/share/ca-certificates/nexus-full-chain.pem \
+        -cacerts \
+        -storepass changeit \
+
 
 RUN update-ca-certificates
 COPY --from=build /app/target/*.jar app.jar
