@@ -9,10 +9,7 @@ RUN keytool -import -trustcacerts -alias iot-nexus-ca \
     -storepass changeit -noprompt
 COPY pom.xml .
 COPY src /app/src
-RUN rm -rf /root/.m2/repository/com/iot/devices/avro/schemas
-RUN mvn clean install -B -DskipTests \
-        -Dmaven.wagon.http.ssl.insecure=true \
-        -Dmaven.wagon.http.ssl.allowall=true
+RUN mvn -B -DskipTests -U package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
@@ -23,5 +20,4 @@ RUN update-ca-certificates && \
     -keystore $JAVA_HOME/lib/security/cacerts \
     -storepass changeit -noprompt
 COPY --from=build /app/target/*.jar app.jar
-ENV JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=$JAVA_HOME/lib/security/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
