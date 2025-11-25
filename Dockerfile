@@ -6,10 +6,11 @@ RUN keytool -importcert -noprompt \
     -alias nexus-ca \
     -file /usr/local/share/ca-certificates/nexus-full-chain.pem \
     -keystore $JAVA_HOME/lib/security/cacerts \
-    -storepass changeit
+    -storepass changeit \
+    -cacerts
 RUN update-ca-certificates
 COPY src /app/src
-RUN mvn -B -DskipTests package
+RUN mvn -B -U -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
@@ -18,7 +19,8 @@ RUN keytool -importcert -noprompt \
     -alias nexus-ca \
     -file /usr/local/share/ca-certificates/nexus-full-chain.pem \
     -keystore $JAVA_HOME/lib/security/cacerts \
-    -storepass changeit
+    -storepass changeit \
+    -cacerts
 
 RUN update-ca-certificates
 COPY --from=build /app/target/*.jar app.jar
