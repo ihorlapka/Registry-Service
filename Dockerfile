@@ -17,6 +17,7 @@ RUN keytool -importcert \
     -trustcacerts -noprompt
 
 RUN openssl s_client -connect iot-nexus:443 -servername iot-nexus -showcerts
+RUN keytool -list -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit | grep -i iot
 COPY pom.xml .
 COPY src /app/src
 RUN mvn -B -DskipTests -U package
