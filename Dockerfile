@@ -9,7 +9,9 @@ RUN keytool -import -trustcacerts -alias iot-nexus-ca \
     -storepass changeit -noprompt
 COPY pom.xml .
 COPY src /app/src
-RUN --mount=type=cache,target=/root/.m2 mvn -B -DskipTests -U package
+RUN mvn clean install -B -DskipTests \
+        -Dmaven.wagon.http.ssl.insecure=true \
+        -Dmaven.wagon.http.ssl.allowall=true
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
