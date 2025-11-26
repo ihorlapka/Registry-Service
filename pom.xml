@@ -20,19 +20,6 @@
 		<java.version>21</java.version>
 	</properties>
 
-	<distributionManagement>
-		<repository>
-			<id>nexus-releases</id>
-			<name>Nexus Release Repository</name>
-			<url>https://iot-nexus/repository/maven-releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>nexus-snapshots</id>
-			<name>Nexus Snapshot Repository</name>
-			<url>https://iot-nexus/repository/maven-snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
-
 	<repositories>
 		<repository>
 			<id>confluent</id>
@@ -47,6 +34,19 @@
 				<updatePolicy>always</updatePolicy>
 			</snapshots>
 		</repository>
+		<repository>
+			<id>github</id>
+			<url>https://maven.pkg.github.com/ihorlapka/Registry-Service</url>
+		</repository>
+<!--		<repository>-->
+<!--			<id>nexus-public-group</id>-->
+<!--			<name>Nexus Public Group</name>-->
+<!--			<url>https://iot-nexus/repository/maven-public/</url>-->
+<!--			<snapshots>-->
+<!--				<enabled>true</enabled>-->
+<!--				<updatePolicy>always</updatePolicy>-->
+<!--			</snapshots>-->
+<!--		</repository>-->
 	</repositories>
 
 	<dependencies>
