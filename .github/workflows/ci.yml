@@ -27,6 +27,10 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
+        server-id: github
+        settings-path: ${{ github.workspace }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Build the Docker image
