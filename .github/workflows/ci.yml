@@ -24,7 +24,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Build with Maven
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       run: mvn -B package --file pom.xml
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag my-image-name:1
