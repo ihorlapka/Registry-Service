@@ -26,18 +26,18 @@
 			<url>https://packages.confluent.io/maven/</url>
 		</repository>
 		<repository>
-			<id>nexus-public-group</id>
-			<name>Nexus Public Group</name>
-			<url>https://iot-nexus/repository/maven-public/</url>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</snapshots>
-		</repository>
-		<repository>
 			<id>github</id>
 			<url>https://maven.pkg.github.com/ihorlapka/Registry-Service</url>
 		</repository>
+<!--		<repository>-->
+<!--			<id>nexus-public-group</id>-->
+<!--			<name>Nexus Public Group</name>-->
+<!--			<url>https://iot-nexus/repository/maven-public/</url>-->
+<!--			<snapshots>-->
+<!--				<enabled>true</enabled>-->
+<!--				<updatePolicy>always</updatePolicy>-->
+<!--			</snapshots>-->
+<!--		</repository>-->
 <!--		<repository>-->
 <!--			<id>nexus-public-group</id>-->
 <!--			<name>Nexus Public Group</name>-->
