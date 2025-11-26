@@ -26,12 +26,8 @@
 			<url>https://packages.confluent.io/maven/</url>
 		</repository>
 		<repository>
-			<id>github-device-connector</id>
-			<url>https://maven.pkg.github.com/ihorlapka/Device-Connector</url>
-		</repository>
-		<repository>
-			<id>github-telemetry-processor</id>
-			<url>https://maven.pkg.github.com/ihorlapka/Telemetry-Event-Processor</url>
+			<id>github</id>
+			<url>https://maven.pkg.github.com/ihorlapka/*</url>
 		</repository>
 <!--		<repository>-->
 <!--			<id>nexus-public-group</id>-->
