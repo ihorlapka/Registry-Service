@@ -19,7 +19,7 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-        server-id: github
+        server-ids: github-device-connector,github-telemetry-processor
         settings-path: ${{ github.workspace }}
         token: ${{ secrets.GITHUB_TOKEN }}
     - name: Build with Maven
