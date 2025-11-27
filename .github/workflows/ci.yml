@@ -39,7 +39,7 @@ jobs:
           </settings>
           EOF
         env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - name: Build with Mave
         run: mvn -B -U package --file pom.xml
         env:
