@@ -6,45 +6,62 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
-    - name: Configure Maven settings
-      run: |
-        mkdir -p ~/.m2
-        cat > ~/.m2/settings.xml <<EOF
-        <settings>
-          <servers>
-            <server>
-              <id>github-device-connector</id>
-              <username>ihorlapka</username>
-              <password>${{ secrets.GH_PACKAGES_TOKEN }}</password>
-            </server>
-            <server>
-              <id>github-telemetry-processor</id>
-              <username>ihorlapka</username>
-              <password>${{ secrets.GH_PACKAGES_TOKEN }}</password>
-            </server>
-          </servers>
-        </settings>
-        EOF
-    - name: Build with Maven
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-      run: mvn -B package --file pom.xml
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:1
+      - uses: actions/checkout@v4
 
-    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
-    - name: Update dependency graph
-      uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Configure Maven settings
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<'EOF'
+          <settings>
+            <servers>
+              <server>
+                <id>github-device-connector</id>
+                <username>ihorlapka</username>
+                <password>${GH_PACKAGES_TOKEN}</password>
+              </server>
+              <server>
+                <id>github-telemetry-processor</id>
+                <username>ihorlapka</username>
+                <password>${GH_PACKAGES_TOKEN}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Debug metadata
+        env:
+          TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: |
+          rm -rf ~/.m2/repository/com/iot*
+          echo "Device-Connector metadata:"
+          curl -sS -u "ihorlapka:${TOKEN}" \
+            "https://maven.pkg.github.com/ihorlapka/Device-Connector/com/iot/devices/avro/schemas/avro-schemas/maven-metadata.xml" || true
+          echo "---"
+          echo "Telemetry metadata:"
+          curl -sS -u "ihorlapka:${TOKEN}" \
+            "https://maven.pkg.github.com/ihorlapka/Telemetry-Event-Processor/com/iot/alerts/avro/schemas/avro-schemas/maven-metadata.xml" || true
+
+      - name: Build with Maven (diagnostic)
+        run: mvn -B -U -e -X package --file pom.xml
+        env:
+          MAVEN_OPTS: -Xmx1024m
+
+      - name: Show dependency tree
+        run: mvn dependency:tree -Dverbose -DoutputFile=dep-tree.txt && sed -n '1,200p' dep-tree.txt
