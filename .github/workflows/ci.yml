@@ -65,6 +65,10 @@ jobs:
         env:
           MAVEN_USER: ${{ github.actor }}
           GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      - name: Copy settings.xml to build context
+        run: |
+          mkdir -p ci
+          cp ~/.m2/settings.xml ci/settings.xml
       - name: Build with Maven
         run: mvn -B -U -e -Pgithub-packages package -DskipTests --file pom.xml
         env:
@@ -83,5 +87,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
-          build-args: |
-            GH_TOKEN=${{ secrets.GH_PACKAGES_TOKEN }}
