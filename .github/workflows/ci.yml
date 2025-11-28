@@ -82,4 +82,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: iot/registry-service:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
