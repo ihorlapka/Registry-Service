@@ -62,7 +62,7 @@ jobs:
           </settings>
           EOF
           echo "------ SETTINGS.XML -------"
-          sed -n '1,20p' /tmp/settings.xml
+          sed -n '1,36p' /tmp/settings.xml
           echo "---------------------------"
         env:
           MAVEN_USER: ${{ github.actor }}
@@ -78,12 +78,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-#      - name: Build and push Docker image
-#        uses: docker/build-push-action@v6.18.0
-#        with:
-#          context: .
-#          file: ./Dockerfile
-#          push: true
-#          tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
-#          secrets: |
-#            maven_settings=/tmp/settings.xml
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
+          secrets: |
+            maven_settings=/tmp/settings.xml
