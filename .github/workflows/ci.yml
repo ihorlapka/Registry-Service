@@ -84,4 +84,4 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
           secrets: |
-            id=maven_settings,src=/tmp/settings.xml
+            maven_settings=/tmp/settings.xml
