@@ -22,39 +22,52 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Configure Maven settings
-        uses: s4u/maven-settings-action@v4.0.0
-        with:
-          servers: |
-            [
-              {
-                "id": "github-device-connector",
-                "username": "${{ github.actor }}",
-                "password": "${{ secrets.GH_PACKAGES_TOKEN }}"
-              },
-              {
-                "id": "github-telemetry-processor",
-                "username": "${{ github.actor }}",
-                "password": "${{ secrets.GH_PACKAGES_TOKEN }}"
-              }
-            ]
-          repositories: |
-            [
-              {
-                "id": "github-device-connector",
-                "url": "https://maven.pkg.github.com/${{ github.actor }}/Device-Connector",
-                "releases": { "enabled": true },
-                "snapshots": { "enabled": true }
-              },
-              {
-                "id": "github-telemetry-processor",
-                "url": "https://maven.pkg.github.com/${{ github.actor }}/Telemetry-Event-Processor",
-                "releases": { "enabled": true },
-                "snapshots": { "enabled": true }
-              }
-            ]
-          override: true
+        run: |
+          cat > /tmp/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github-device-connector</id>
+                <username>${MAVEN_USER}</username>
+                <password>${GH_PACKAGES_TOKEN}</password>
+              </server>
+              <server>
+                <id>github-telemetry-processor</id>
+                <username>${MAVEN_USER}</username>
+                <password>${GH_PACKAGES_TOKEN}</password>
+              </server>
+            </servers>
+            <profiles>
+              <profile>
+                <id>github-packages</id>
+                <repositories>
+                  <repository>
+                    <id>github-device-connector</id>
+                    <url>https://maven.pkg.github.com/${MAVEN_USER}/Device-Connector</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                  <repository>
+                    <id>github-telemetry-processor</id>
+                    <url>https://maven.pkg.github.com/${MAVEN_USER}/Telemetry-Event-Processor</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>github-packages</activeProfile>
+            </activeProfiles>
+          </settings>
+          EOF
+        env:
+          MAVEN_USER: ${{ github.actor }}
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - name: Build with Maven
-        run: mvn -B -U -e -X package -DskipTests -P github-packages
+        run: mvn -B -U -e -X package -DskipTests --file pom.xml
+        env:
+          MAVEN_OPTS: -Xmx1024m
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.11.1
       - name: Docker Login
@@ -70,4 +83,4 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
           secrets: |
-            maven_settings=./settings.xml
+            maven_settings=/tmp/settings.xml
