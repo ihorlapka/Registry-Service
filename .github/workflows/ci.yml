@@ -23,8 +23,7 @@ jobs:
           cache: maven
       - name: Configure Maven settings
         run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
+          cat > /tmp/settings.xml <<-EOF
           <settings>
             <servers>
               <server>
@@ -63,7 +62,7 @@ jobs:
           </settings>
           EOF
           echo "------ SETTINGS.XML -------"
-          sed -n '1,20p' /m2/settings.xml
+          sed -n '1,20p' /tmp/settings.xml
           echo "---------------------------"
         env:
           MAVEN_USER: ${{ github.actor }}
