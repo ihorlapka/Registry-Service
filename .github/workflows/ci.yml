@@ -24,6 +24,9 @@ jobs:
       - name: Configure Maven settings
         id: configure_maven
         run: |
+          echo "------ SETTINGS.XML -------"
+          sed -n '1,20p' /tmp/settings.xml
+          echo "---------------------------"
           cat > /tmp/settings.xml <<EOF
           <settings>
             <servers>
