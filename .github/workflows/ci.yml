@@ -65,7 +65,7 @@ jobs:
           MAVEN_USER: ${{ github.actor }}
           GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - name: Build with Maven
-        run: mvn -B -U -e package -DskipTests --file pom.xml
+        run: mvn -B -U -e -Pgithub-packages package -DskipTests --file pom.xml
         env:
           MAVEN_OPTS: -Xmx1024m
       - name: Set up Docker Buildx
