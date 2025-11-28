@@ -5,11 +5,11 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-    
+
 permissions:
   contents: read
   packages: write
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,40 +26,40 @@ jobs:
         run: |
           cat > /tmp/settings.xml <<EOF
           <settings>
-          <servers>
-           <server>
-             <id>github-device-connector</id>
-             <username>${MAVEN_USER}</username>
-             <password>${GH_PACKAGES_TOKEN}</password>
-           </server>
-           <server>
-             <id>github-telemetry-processor</id>
-             <username>${MAVEN_USER}</username>
-             <password>${GH_PACKAGES_TOKEN}</password>
-           </server>
-          </servers>
-          <profiles>
-           <profile>
-             <id>github-packages</id>
-             <repositories>
-               <repository>
-                 <id>github-device-connector</id>
-                 <url>https://maven.pkg.github.com/${MAVEN_USER}/Device-Connector</url>
-                 <snapshots><enabled>true</enabled></snapshots>
-                 <releases><enabled>true</enabled></releases>
-               </repository>
-               <repository>
-                 <id>github-telemetry-processor</id>
-                 <url>https://maven.pkg.github.com/${MAVEN_USER}/Telemetry-Event-Processor</url>
-                 <snapshots><enabled>true</enabled></snapshots>
-                 <releases><enabled>true</enabled></releases>
-               </repository>
-             </repositories>
-           </profile>
-          </profiles>
-          <activeProfiles>
-           <activeProfile>github-packages</activeProfile>
-          </activeProfiles>
+            <servers>
+              <server>
+                <id>github-device-connector</id>
+                <username>${MAVEN_USER}</username>
+                <password>${GH_PACKAGES_TOKEN}</password>
+              </server>
+              <server>
+                <id>github-telemetry-processor</id>
+                <username>${MAVEN_USER}</username>
+                <password>${GH_PACKAGES_TOKEN}</password>
+              </server>
+            </servers>
+            <profiles>
+              <profile>
+                <id>github-packages</id>
+                <repositories>
+                  <repository>
+                    <id>github-device-connector</id>
+                    <url>https://maven.pkg.github.com/ihorlapka/Device-Connector</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                  <repository>
+                    <id>github-telemetry-processor</id>
+                    <url>https://maven.pkg.github.com/ihorlapka/Telemetry-Event-Processor</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>github-packages</activeProfile>
+            </activeProfiles>
           </settings>
           EOF
         env:
