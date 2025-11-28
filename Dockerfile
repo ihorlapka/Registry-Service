@@ -3,7 +3,7 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 RUN --mount=type=secret,id=maven_settings,target=/tmp/.m2/settings.xml \
-    mvn -B -s -e -X /tmp/.m2/settings.xml -DskipTests package
+    mvn -B -s /tmp/.m2/settings.xml -e -X -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
