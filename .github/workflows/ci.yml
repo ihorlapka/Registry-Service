@@ -22,6 +22,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Configure Maven settings
+        id: configure_maven
         run: |
           cat > /tmp/settings.xml <<EOF
           <settings>
