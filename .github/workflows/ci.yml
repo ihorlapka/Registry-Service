@@ -45,22 +45,14 @@ jobs:
                   <repository>
                     <id>github-device-connector</id>
                     <url>https://maven.pkg.github.com/ihorlapka/Device-Connector</url>
-                    <releases>
-                      <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                      <enabled>true</enabled>
-                    </snapshots>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
                   </repository>
                   <repository>
                     <id>github-telemetry-processor</id>
                     <url>https://maven.pkg.github.com/ihorlapka/Telemetry-Event-Processor</url>
-                    <releases>
-                      <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                      <enabled>true</enabled>
-                    </snapshots>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
                   </repository>
                 </repositories>
               </profile>
