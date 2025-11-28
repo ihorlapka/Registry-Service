@@ -58,8 +58,7 @@ jobs:
             <activeProfiles>
               <activeProfile>github-packages</activeProfile>
             </activeProfiles>
-          </settings>
-          EOF
+          </settings>EOF
         env:
           MAVEN_USER: ${{ github.actor }}
           GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
