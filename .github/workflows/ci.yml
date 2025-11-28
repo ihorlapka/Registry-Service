@@ -24,7 +24,7 @@ jobs:
       - name: Configure Maven settings
         id: configure_maven
         run: |
-          cat > /tmp/settings.xml <<EOF
+          cat > /tmp/settings.xml <<-EOF
           <settings>
             <servers>
               <server>
