@@ -52,11 +52,9 @@ jobs:
                 "snapshots": { "enabled": true }
               }
             ]
-          activeProfiles: github-packages
+          override: true
       - name: Build with Maven
-        run: mvn -B -U -e -X package -DskipTests --file pom.xml
-        env:
-          MAVEN_OPTS: -Xmx1024m
+        run: mvn -B -U -e -X package -DskipTests -P github-packages
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.11.1
       - name: Docker Login
@@ -72,4 +70,4 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
           secrets: |
-            maven_settings=/tmp/settings.xml
+            maven_settings=settings.xml
