@@ -43,7 +43,7 @@ jobs:
           </settings>
           EOF
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - name: Build with Maven
         run: mvn -B -U -e -X package --file pom.xml
         env:
