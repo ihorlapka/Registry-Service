@@ -26,13 +26,33 @@ jobs:
         with:
           servers: |
             [
-              { "id": "github-device-connector",
+              {
+                "id": "github-device-connector",
                 "username": "${{ github.actor }}",
-                "password": "${{ secrets.GH_PACKAGES_TOKEN }}" },
-              { "id": "github-telemetry-processor",
+                "password": "${{ secrets.GH_PACKAGES_TOKEN }}"
+              },
+              {
+                "id": "github-telemetry-processor",
                 "username": "${{ github.actor }}",
-                "password": "${{ secrets.GH_PACKAGES_TOKEN }}" }
+                "password": "${{ secrets.GH_PACKAGES_TOKEN }}"
+              }
             ]
+          repositories: |
+            [
+              {
+                "id": "github-device-connector",
+                "url": "https://maven.pkg.github.com/${{ github.actor }}/Device-Connector",
+                "releases": { "enabled": true },
+                "snapshots": { "enabled": true }
+              },
+              {
+                "id": "github-telemetry-processor",
+                "url": "https://maven.pkg.github.com/${{ github.actor }}/Telemetry-Event-Processor",
+                "releases": { "enabled": true },
+                "snapshots": { "enabled": true }
+              }
+            ]
+          activeProfiles: github-packages
       - name: Build with Maven
         run: mvn -B -U -e -X package -DskipTests --file pom.xml
         env:
