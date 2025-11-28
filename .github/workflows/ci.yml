@@ -31,13 +31,13 @@ jobs:
             <servers>
               <server>
                 <id>github-device-connector</id>
-                <username>ihorlapka</username>
-                <password>${MAVEN_PUBLISH_TOKEN}</password>
+                <username>github.actor</username>
+                <password>${ secrets.GH_PACKAGES_TOKEN }</password>
               </server>
               <server>
                 <id>github-telemetry-processor</id>
-                <username>ihorlapka</username>
-                <password>${MAVEN_PUBLISH_TOKEN}</password>
+                <username>github.actor</username>
+                <password>${ secrets.GH_PACKAGES_TOKEN }</password>
               </server>
             </servers>
           </settings>
