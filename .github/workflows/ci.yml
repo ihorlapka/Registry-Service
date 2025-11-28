@@ -83,3 +83,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
+          build-args: |
+            GH_TOKEN=${{ secrets.GH_PACKAGES_TOKEN }}
