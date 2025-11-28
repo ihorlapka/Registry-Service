@@ -23,7 +23,8 @@ jobs:
           cache: maven
       - name: Configure Maven settings
         run: |
-          cat > /tmp/settings.xml <<EOF
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
           <settings>
             <servers>
               <server>
