@@ -45,7 +45,7 @@ management:
         include: "*"
 security:
   jwt:
-    secret-key: "my-token"
+    secret-key: "13a8b2d1c07c049de2422639fccbd453a0460e93c576adb3ef86209dd5a8a0eb"
     expiration: 86400000 # day
     refresh-token.expiration: 604800000 # week
 resilience4j:
