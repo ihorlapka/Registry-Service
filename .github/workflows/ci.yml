@@ -24,7 +24,7 @@ jobs:
       - name: Configure Maven settings
         run: |
           mkdir -p ~/.m2
-          SETTINGS_XML=$(cat > ~/.m2/settings.xml <<EOF
+          cat > ~/.m2/settings.xml <<EOF
           <settings>
             <servers>
               <server>
@@ -62,9 +62,6 @@ jobs:
             </activeProfiles>
           </settings>
           EOF
-          )
-          echo "$SETTINGS_XML" > /tmp/settings.xml
-          echo "SETTINGS_FILE_PATH=/tmp/settings.xml" >> $GITHUB_OUTPUT
         env:
           MAVEN_USER: ${{ github.actor }}
           GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -87,4 +84,4 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
           secrets: |
-            "maven_settings=${{ steps.configure_maven.outputs.SETTINGS_FILE_PATH }}"
+            id=maven_settings,src=/tmp/settings.xml
