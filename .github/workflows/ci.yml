@@ -83,5 +83,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
-          secrets: |
-            maven_settings=/tmp/settings.xml

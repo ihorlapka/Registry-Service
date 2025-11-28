@@ -1,13 +1,8 @@
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
+
 COPY pom.xml .
 COPY src ./src
-RUN --mount=type=secret,id=maven_settings,target=/tmp/settings.xml \
-    echo "===== START settings.xml =====" && \
-    cat /tmp/settings.xml && \
-    echo "===== END settings.xml =====" && \
-    mvn -B -s /tmp/settings.xml -DskipTests -e -X package
-FROM eclipse-temurin:21-jre
-WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+COPY .m2/settings.xml /root/.m2/settings.xml
+
+RUN mvn -B -U -e -X -DskipTests package
