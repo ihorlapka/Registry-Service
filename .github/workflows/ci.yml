@@ -22,9 +22,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Configure Maven settings
-        id: configure_maven
         run: |
-          cat > /tmp/settings.xml <<-EOF
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
           <settings>
             <servers>
               <server>
@@ -44,13 +44,13 @@ jobs:
                 <repositories>
                   <repository>
                     <id>github-device-connector</id>
-                    <url>https://maven.pkg.github.com/ihorlapka/Device-Connector</url>
+                    <url>https://maven.pkg.github.com/${MAVEN_USER}/Device-Connector</url>
                     <releases><enabled>true</enabled></releases>
                     <snapshots><enabled>true</enabled></snapshots>
                   </repository>
                   <repository>
                     <id>github-telemetry-processor</id>
-                    <url>https://maven.pkg.github.com/ihorlapka/Telemetry-Event-Processor</url>
+                    <url>https://maven.pkg.github.com/${MAVEN_USER}/Telemetry-Event-Processor</url>
                     <releases><enabled>true</enabled></releases>
                     <snapshots><enabled>true</enabled></snapshots>
                   </repository>
@@ -72,19 +72,19 @@ jobs:
         run: mvn -B -U -e -X package -DskipTests --file pom.xml
         env:
           MAVEN_OPTS: -Xmx1024m
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.11.1
-      - name: Docker Login
-        uses: docker/login-action@v3.6.0
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6.18.0
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
-          secrets: |
-            maven_settings=/tmp/settings.xml
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3.11.1
+#      - name: Docker Login
+#        uses: docker/login-action@v3.6.0
+#        with:
+#          username: ${{ secrets.DOCKER_USERNAME }}
+#          password: ${{ secrets.DOCKER_PASSWORD }}
+#      - name: Build and push Docker image
+#        uses: docker/build-push-action@v6.18.0
+#        with:
+#          context: .
+#          file: ./Dockerfile
+#          push: true
+#          tags: ${{ secrets.DOCKER_USERNAME }}/iot-registry/registry-service:latest
+#          secrets: |
+#            maven_settings=/tmp/settings.xml
