@@ -40,12 +40,36 @@ jobs:
                 <password>${GH_PACKAGES_TOKEN}</password>
               </server>
             </servers>
+          
+          <profiles>
+              <profile>
+                <id>github-packages</id>
+                <repositories>
+                  <repository>
+                    <id>github-device-connector</id>
+                    <url>https://maven.pkg.github.com/${MAVEN_USER}/Device-Connector</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                  <repository>
+                    <id>github-telemetry-processor</id>
+                    <url>https://maven.pkg.github.com/${MAVEN_USER}/Telemetry-Event-Processor</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+
+            <activeProfiles>
+              <activeProfile>github-packages</activeProfile>
+            </activeProfiles>
           </settings>
           EOF
         env:
           MAVEN_USER: ${{ github.actor }}
           GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - name: Build with Maven
-        run: mvn -B -U -e -X package --file pom.xml
+        run: mvn -B -U -e package --file pom.xml
         env:
           MAVEN_OPTS: -Xmx1024m
