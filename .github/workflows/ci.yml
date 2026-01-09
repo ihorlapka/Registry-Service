@@ -99,18 +99,15 @@ jobs:
         run: |
           cd Kubernetes-Manifests/iot-registry-service/overlays/dev
           kustomize edit set image ${{ secrets.DOCKER_USERNAME }}/iot-registry-service:${{ github.run_number }}
-      - name: Debug kustomization diff
-        run: |
-          cd Kubernetes-Manifests/iot-registry-service/overlays/dev
-          echo "==== kustomization.yaml ===="
-          cat kustomization.yaml
-          echo "==== git diff ===="
-          git diff
       - name: Commit and push manifest changes
         run: |
           cd Kubernetes-Manifests
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add .
-          git diff --quiet || git commit -m "chore: update iot-registry-service image to ${{ github.run_number }}"
-          git push
+          if ! git diff --quiet; then
+            git add .
+            git commit -m "chore: update iot-registry-service image to ${{ github.run_number }}"
+            git push
+          else
+            echo "No changes to commit"
+          fi
