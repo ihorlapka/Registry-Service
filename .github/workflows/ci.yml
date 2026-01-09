@@ -99,6 +99,13 @@ jobs:
         run: |
           cd Kubernetes-Manifests/iot-registry-service/overlays/dev
           kustomize edit set image ${{ secrets.DOCKER_USERNAME }}/iot-registry-service:${{ github.run_number }}
+      - name: Debug kustomization diff
+        run: |
+          cd Kubernetes-Manifests/iot-registry-service/overlays/dev
+          echo "==== kustomization.yaml ===="
+          cat kustomization.yaml
+          echo "==== git diff ===="
+          git diff
       - name: Commit and push manifest changes
         run: |
           cd Kubernetes-Manifests
