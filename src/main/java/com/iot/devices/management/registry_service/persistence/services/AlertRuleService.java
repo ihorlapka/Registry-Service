@@ -100,7 +100,9 @@ public class AlertRuleService {
             if (alertRule.isPresent()) {
                 final Set<DeviceAlertRule> deviceAlertRules = deviceAlertRuleRepository.findByAlertRule(alertRule.get());
                 if (!deviceAlertRules.isEmpty()) {
-                    final int removedDeviceAlertRules = deviceAlertRuleRepository.removeAllByIds(deviceAlertRules.stream().map(DeviceAlertRule::getId).toList());
+                    final int removedDeviceAlertRules = deviceAlertRuleRepository.removeAllByIds(deviceAlertRules.stream()
+                            .map(DeviceAlertRule::getId)
+                            .toList());
                     if (removedDeviceAlertRules == 0) {
                         log.warn("DeviceAlertRules for alertRuleId={} has already been removed", ruleId);
                     } else {
