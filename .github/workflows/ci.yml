@@ -97,8 +97,8 @@ jobs:
           path: Kubernetes-Manifests
       - name: Update image tag in kustomization.yaml
         run: |
-          cd Kubernetes-Manifests/iot-registry-service/base
-          sed -i "s/newTag: .*/newTag: \"${{ github.run_number }}\"/" kustomization.yaml
+          cd Kubernetes-Manifests/iot-registry-service/overlays/dev
+          kustomize edit set image ${{ secrets.DOCKER_USERNAME }}/iot-registry-service:${{ github.run_number }}
       - name: Commit and push manifest changes
         run: |
           cd Kubernetes-Manifests
