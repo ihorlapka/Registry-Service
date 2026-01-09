@@ -51,11 +51,12 @@ public class KafkaConsumerRunner {
     }
 
     private void runConsumer() {
+        if (!isSubscribed) {
+            log.info("Subscribing...");
+            subscribe();
+        }
         while (!isShutdown) {
             try {
-                if (!isSubscribed) {
-                    subscribe();
-                }
                 final ConsumerRecords<String, SpecificRecord> records = kafkaConsumer.poll(Duration.of(consumerProperties.getPollTimeoutMs(), MILLIS));
                 kpiMetricLogger.recordRecordsInOnePoll(records.count());
                 final Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>(partitions.size());
@@ -70,13 +71,20 @@ public class KafkaConsumerRunner {
                 }
             } catch (WakeupException e) {
                 log.info("Consumer poll woken up");
+                if (!isSubscribed) {
+                    log.error("Unexpected kafka consumer poll wakeup", e);
+                    throw e;
+                }
             } catch (Exception e) {
                 log.error("Unexpected exception in consumer loop ", e);
                 closeConsumer();
+                if (!isSubscribed) {
+                    log.info("Subscribing after kafka consumer was closed...");
+                    subscribe();
+                }
             }
         }
         log.info("Exited kafka consumer loop");
-        closeConsumer();
     }
 
     private void subscribe() {
@@ -138,6 +146,10 @@ public class KafkaConsumerRunner {
     private void closeConsumer() {
         try {
             if (kafkaConsumer != null) {
+                if (isShutdown) {
+                    log.info("Kafka consumer poll wakeup...");
+                    kafkaConsumer.wakeup();
+                }
                 log.info("Closing kafka consumer");
                 kafkaConsumer.close();
                 log.info("Kafka consumer is closed");
