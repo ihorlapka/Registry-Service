@@ -110,6 +110,25 @@ kafka:
         enable.idempotence: true
         client.id: alerting-rules-producer
         auto.register.schemas: true #for test only
+    dead-letter:
+      topic: dead-letter-telemetries-updates
+      executor-termination-timeout-ms: 5000
+      properties:
+        bootstrap.servers: localhost:9092
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        schema.registry.url: mock://my-scope:8081
+        acks: all
+        linger.ms: 10
+        batch.size: 32768
+        compression.type: snappy
+        retries: 3
+        retry.backoff.ms: 100
+        enable.idempotence: true
+        request.timeout.ms: 15000
+        delivery.timeout.ms: 30000
+        client.id: dead-letter-producer
+        auto.register.schemas: false
 parallel.patcher:
   threads.amount: 10
   threads.virtual: false
@@ -122,3 +141,7 @@ persister:
   retries:
     max.attempts: 5
     wait.duration.ms: 100
+cache:
+  initial.capacity: 10
+  max.size: 500
+  expiration.time.min: 1
