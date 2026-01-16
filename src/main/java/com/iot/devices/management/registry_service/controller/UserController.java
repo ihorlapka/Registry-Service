@@ -59,11 +59,11 @@ public class UserController {
     @UpdateUserOpenApi
     public ResponseEntity<UserDto> patchUser(@RequestBody @Valid PatchUserRequest request, Authentication auth) {
         final Optional<User> user = userService.findByUsername(request.username());
-        if (!hasPatchPermission(auth, user, request)) {
-            throw new PermissionDeniedException(auth.getName());
-        }
         if (user.isEmpty()) {
             throw new UserNotFoundException(request.username());
+        }
+        if (!hasPatchPermission(auth, user.get(), request)) {
+            throw new PermissionDeniedException(auth.getName());
         }
         final User saved = userService.patch(request, user.get());
         return ResponseEntity.ok(mapUser(saved));
