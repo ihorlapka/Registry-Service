@@ -43,7 +43,7 @@ public class Utils {
         if (userToBePatched.map(u -> u.getUsername().equals(auth.getName())).orElse(false)) {
             return Objects.equals(request.userRole(), authRole) || request.userRole() == null;
         }
-        return userToBePatched.map(user -> user.getUserRole().getLevel() < authRole.getLevel())
+        return userToBePatched.map(user -> authRole.getLevel() < user.getUserRole().getLevel())
                 .orElse(true);
     }
 

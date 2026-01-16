@@ -86,8 +86,8 @@ public class DefaultAlertRulesProvider {
 
     private Set<AlertRule> getSmartLightAlertRules(User owner) {
         return Set.of(
-                new AlertRule(null, ENERGY_CONSUMED, GREATER_THAN, 12f, CRITICAL, true, owner.getUsername()),
-                new AlertRule(null, ENERGY_CONSUMED, GREATER_THAN, 18f, CRITICAL, true, owner.getUsername()),
+                new AlertRule(null, ENERGY_CONSUMED, GREATER_THAN, 12f, INFO, true, owner.getUsername()),
+                new AlertRule(null, ENERGY_CONSUMED, GREATER_THAN, 18f, WARNING, true, owner.getUsername()),
                 new AlertRule(null, ENERGY_CONSUMED, GREATER_THAN, 30f, CRITICAL, true, owner.getUsername())
         );
     }
