@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.*;
         DeviceService.class,
         UsersRepository.class,
         DevicesRepository.class,
+        DevicesRepository.class,
         AlertRulesRepository.class,
         DeviceAlertRuleRepository.class,
         DefaultAlertRulesProvider.class,
@@ -267,6 +268,7 @@ public class DeviceAndAlertRulesServicesTest {
         assertEquals(14, alertRulesRepository.findAlertRulesByUsername(username).size());
         assertEquals(14, deviceAlertRuleRepository.findAllByDeviceId(savedDevice1.getId()).size());
         assertEquals(13, deviceAlertRuleRepository.findAllByDeviceId(savedDevice2.getId()).size());
+        sleep(1000);
         assertEquals(2, messagesByKey.size());
         messagesByKey.clear();
 
@@ -281,6 +283,7 @@ public class DeviceAndAlertRulesServicesTest {
         assertEquals(12, alertRulesRepository.findAlertRulesByUsername(username).size());
         assertEquals(12, deviceAlertRuleRepository.findAllByDeviceId(savedDevice1.getId()).size());
         assertEquals(11, deviceAlertRuleRepository.findAllByDeviceId(savedDevice2.getId()).size());
+        sleep(1000);
         assertEquals(2, messagesByKey.size());
         messagesByKey.clear();
 
@@ -296,6 +299,7 @@ public class DeviceAndAlertRulesServicesTest {
         assertEquals(12, alertRulesRepository.findAlertRulesByUsername(username).size());
         assertEquals(11, deviceAlertRuleRepository.findAllByDeviceId(savedDevice1.getId()).size());
         assertEquals(12, deviceAlertRuleRepository.findAllByDeviceId(savedDevice2.getId()).size());
+        sleep(1000);
         assertEquals(1, messagesByKey.size());
         messagesByKey.clear();
     }
