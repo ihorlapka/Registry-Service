@@ -176,6 +176,7 @@ public class DeviceAndAlertRulesServicesTest {
         assertNotNull(newAlertRule2);
         assertEquals(14, alertRulesRepository.findAlertRulesByUsername(username).size());
         assertEquals(14, deviceAlertRuleRepository.findAllByDeviceId(savedDevice1.getId()).size());
+        sleep(1000);
         assertEquals(2, messagesByKey.size());
         messagesByKey.clear();
 
