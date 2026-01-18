@@ -48,6 +48,7 @@ import static com.iot.devices.management.registry_service.persistence.model.enum
 import static com.iot.devices.management.registry_service.persistence.model.enums.alerts.SeverityLevel.*;
 import static com.iot.devices.management.registry_service.persistence.model.enums.alerts.ThresholdType.LESS_THAN;
 import static com.iot.devices.management.registry_service.persistence.model.enums.alerts.ThresholdType.NOT_EQUAL_TO;
+import static java.lang.Thread.sleep;
 import static java.time.OffsetDateTime.now;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.*;
@@ -150,7 +151,7 @@ public class DeviceAndAlertRulesServicesTest {
     }
 
     @Test
-    void testDeviceCrudOperations() {
+    void testDeviceCrudOperations() throws InterruptedException {
         Optional<User> user = usersRepository.findByUsername(username);
         assertTrue(user.isPresent());
 
@@ -164,6 +165,7 @@ public class DeviceAndAlertRulesServicesTest {
         List<AlertRule> alertRulesByUsername = alertRulesRepository.findAlertRulesByUsername(username);
         assertEquals(12, alertRulesByUsername.size());
         assertEquals(12, deviceAlertRuleRepository.findAllByDeviceId(savedDevice1.getId()).size());
+        sleep(1000);
         assertEquals(12, messagesByKey.size());
         messagesByKey.clear();
 
@@ -229,7 +231,7 @@ public class DeviceAndAlertRulesServicesTest {
     }
 
     @Test
-    void testAlertRulesCrudOperations() {
+    void testAlertRulesCrudOperations() throws InterruptedException {
         Optional<User> user = usersRepository.findByUsername(username);
         assertTrue(user.isPresent());
 
@@ -248,6 +250,7 @@ public class DeviceAndAlertRulesServicesTest {
         assertNotNull(savedDevice1);
         assertNotNull(savedDevice2);
         List<AlertRule> defaultAlertRulesByUsername = alertRulesRepository.findAlertRulesByUsername(username);
+        sleep(1000);
         assertEquals(12, defaultAlertRulesByUsername.size());
         assertEquals(12, deviceAlertRuleRepository.findAllByDeviceId(savedDevice1.getId()).size());
         assertEquals(12, messagesByKey.size());

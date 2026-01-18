@@ -16,7 +16,8 @@ public class DeadLetterProducer {
                 producerProperties.getProperties(),
                 producerProperties.getExecutorTerminationTimeoutMs(),
                 meterRegistry,
-                producerProperties.getTopic());
+                producerProperties.getTopic(),
+                false);
     }
 
     public void send(String key, SpecificRecord telemetry) {

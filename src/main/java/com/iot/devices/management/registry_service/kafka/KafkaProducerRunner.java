@@ -7,14 +7,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toSet;
 import static com.iot.devices.management.registry_service.controller.errors.AlertRulesException.AlertRuleNotSentException;
 
@@ -25,27 +26,34 @@ public class KafkaProducerRunner<K, V> {
     private final KafkaProducer<K, V> kafkaProducer;
     private final KafkaClientMetrics kafkaClientMetrics;
     private final String topic;
+    private final ExecutorService executorService;
+
 
     public KafkaProducerRunner(Map<String, String> producerProperties, long executorTerminationTimeoutMs,
-                               MeterRegistry meterRegistry, String topic) {
+                               MeterRegistry meterRegistry, String topic, boolean isTransactional) {
         this.executorTerminationTimeoutMs = executorTerminationTimeoutMs;
         this.topic = topic;
         this.kafkaProducer = new KafkaProducer<>(getProperties(producerProperties));
         this.kafkaClientMetrics = new KafkaClientMetrics(kafkaProducer);
         this.kafkaClientMetrics.bindTo(meterRegistry);
+        this.executorService = isTransactional ? Executors.newSingleThreadExecutor() : null;
     }
 
     public void initTransactions() {
         kafkaProducer.initTransactions();
     }
 
-    public Future<RecordMetadata> send(K key, V value) {
+    public void send(K key, V value) {
         log.info("Sending to topic={}, key={}, message={}", topic, key, value);
         final ProducerRecord<K, V> record = new ProducerRecord<>(topic, key, value);
-        return kafkaProducer.send(record, getCallback(value));
+        kafkaProducer.send(record, getCallback(value));
     }
 
     public void sendTransactionally(Map<K, V> alertRulesByRuleId) {
+        executorService.submit(() -> doSendTransactionally(alertRulesByRuleId));
+    }
+
+    public void doSendTransactionally(Map<K, V> alertRulesByRuleId) {
         try {
             kafkaProducer.beginTransaction();
             for (Map.Entry<K,V> entry : alertRulesByRuleId.entrySet()) {
@@ -85,8 +93,17 @@ public class KafkaProducerRunner<K, V> {
     }
 
     @PreDestroy
-    public void shutdown() {
+    public void shutdown() throws InterruptedException {
         log.info("Shutting down KafkaProducer...");
+        if (executorService != null) {
+            executorService.shutdown();
+            if (!executorService.awaitTermination(executorTerminationTimeoutMs, MILLISECONDS)) {
+                executorService.shutdownNow();
+                log.info("Kafka Producer executor shutdown forced");
+            } else {
+                log.info("Kafka Producer executor shutdown gracefully");
+            }
+        }
         if (kafkaProducer != null) {
             try {
                 kafkaProducer.flush();

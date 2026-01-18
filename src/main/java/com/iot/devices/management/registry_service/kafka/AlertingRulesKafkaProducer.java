@@ -28,7 +28,8 @@ public class AlertingRulesKafkaProducer {
                 producerProperties.getProperties(),
                 producerProperties.getExecutorTerminationTimeoutMs(),
                 meterRegistry,
-                producerProperties.getTopic());
+                producerProperties.getTopic(),
+                true);
         kafkaProducerRunner.initTransactions();
     }
 
