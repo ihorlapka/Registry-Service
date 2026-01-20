@@ -3,6 +3,7 @@ package com.iot.devices.management.registry_service.kafka;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics;
 import jakarta.annotation.PreDestroy;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -12,8 +13,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -36,7 +37,7 @@ public class KafkaProducerRunner<K, V> {
         this.kafkaProducer = new KafkaProducer<>(getProperties(producerProperties));
         this.kafkaClientMetrics = new KafkaClientMetrics(kafkaProducer);
         this.kafkaClientMetrics.bindTo(meterRegistry);
-        this.executorService = isTransactional ? Executors.newSingleThreadExecutor() : null;
+        this.executorService = isTransactional ? Executors.newSingleThreadExecutor(new ProducerThreadFactory()) : null;
     }
 
     public void initTransactions() {
@@ -50,7 +51,12 @@ public class KafkaProducerRunner<K, V> {
     }
 
     public void sendTransactionally(Map<K, V> alertRulesByRuleId) {
-        executorService.submit(() -> doSendTransactionally(alertRulesByRuleId));
+        try {
+            final Future<?> future = executorService.submit(() -> doSendTransactionally(alertRulesByRuleId));
+            future.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void doSendTransactionally(Map<K, V> alertRulesByRuleId) {
@@ -116,6 +122,19 @@ public class KafkaProducerRunner<K, V> {
         if (kafkaClientMetrics != null) {
             kafkaClientMetrics.close();
             log.info("KafkaClientMetrics are closed");
+        }
+    }
+
+    static class ProducerThreadFactory implements ThreadFactory {
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+        private final String namePrefix;
+
+        ProducerThreadFactory() {
+            namePrefix = "thx-kafka-producer-thread-";
+        }
+
+        public Thread newThread(@NonNull Runnable runnable) {
+            return new Thread(runnable, namePrefix + threadNumber.getAndIncrement());
         }
     }
 }

@@ -137,7 +137,7 @@ public class AlertRuleService {
     private List<Device> loadDevices(Set<UUID> deviceIds) {
         final List<Device> devices = devicesRepository.findAllById(deviceIds);
         if (devices.isEmpty()) {
-            throw new DeviceNotFoundException("No devices found for given Ids: [" + deviceIds + "]");
+            throw new DeviceNotFoundException("No devices found for given Ids: " + deviceIds);
         }
         if (devices.size() != deviceIds.size()) {
             throw new DeviceNotFoundException("No devices present in db with Ids: [" +
