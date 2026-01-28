@@ -2,6 +2,7 @@ package com.iot.devices.management.registry_service.controller;
 
 import com.iot.devices.management.registry_service.controller.dto.DeviceDto;
 import com.iot.devices.management.registry_service.controller.util.CreateDeviceRequest;
+import com.iot.devices.management.registry_service.controller.util.DevicePermissionResponse;
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
 import com.iot.devices.management.registry_service.controller.util.Utils;
 import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.CreateDeviceOpenApi;
@@ -86,15 +87,25 @@ public class DeviceController {
     @RemoveDeviceByIdOpenApi
     public ResponseEntity<Void> deleteDevice(@PathVariable @NonNull UUID deviceId, Authentication auth) {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
+        if (device.isEmpty()) {
+            throw new DeviceNotFoundException(deviceId);
+        }
         final Optional<User> owner = device.map(Device::getOwner);
         if (!hasPermission(auth, owner)) {
             throw new PermissionDeniedException(auth.getName());
         }
+        deviceService.removeById(deviceId, owner.orElse(null));
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<DevicePermissionResponse> checkDevicePermission(UUID deviceId, Authentication auth) {
+        final Optional<Device> device = deviceService.findByDeviceId(deviceId);
         if (device.isEmpty()) {
             throw new DeviceNotFoundException(deviceId);
         }
-        deviceService.removeById(deviceId, owner.orElse(null));
-        return ResponseEntity.noContent().build();
+        final Optional<User> owner = device.map(Device::getOwner);
+        return ResponseEntity.ok(new DevicePermissionResponse(hasPermission(auth, owner)));
     }
 
     //not redundant, used when method getDevice() achieved max retries

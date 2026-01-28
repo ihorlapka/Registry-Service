@@ -12,10 +12,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public record CreateDeviceRequest(
-        @NonNull
         @NotBlank(message = "device name is required")
         String name,
-        @NonNull
         @NotBlank(message = "serial number is required")
         String serialNumber,
         @NonNull
