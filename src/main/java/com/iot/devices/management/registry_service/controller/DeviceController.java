@@ -110,7 +110,7 @@ public class DeviceController {
     }
 
     //not redundant, used when method getDevice() achieved max retries
-    public ResponseEntity<DeviceDto>  rateLimitFallback(UUID deviceId, Throwable t) {
+    public ResponseEntity<DeviceDto>  rateLimitFallback(UUID deviceId, Authentication auth, Throwable t) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
     }
 
