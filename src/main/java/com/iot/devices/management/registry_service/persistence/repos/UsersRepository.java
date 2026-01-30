@@ -1,6 +1,7 @@
 package com.iot.devices.management.registry_service.persistence.repos;
 
 import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.UserProjection;
 import jakarta.validation.constraints.Email;
 import lombok.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public interface UsersRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(@NonNull @Email String email);
+
     Optional<User> findByUsername(@NonNull String username);
 
     @Modifying
@@ -26,4 +28,12 @@ public interface UsersRepository extends JpaRepository<User, UUID> {
     @Modifying
     @Query("UPDATE User u SET u.lastLoginAt = :loginTime WHERE u.id = :id")
     int updateLastLoginTime(@Param("id") UUID id, @Param("loginTime") OffsetDateTime loginTime);
+
+    @Query("""
+            SELECT new com.iot.devices.management.registry_service.persistence.model.UserProjection(u.id, u.username, u.userRole)
+            FROM User u
+            JOIN Device d ON u.id = d.owner.id
+            WHERE d.id = :deviceId
+            """)
+    Optional<UserProjection> findUserProjectionByDeviceId(@Param("deviceId") UUID deviceId);
 }

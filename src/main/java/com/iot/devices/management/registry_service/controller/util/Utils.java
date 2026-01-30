@@ -6,6 +6,7 @@ import com.iot.devices.management.registry_service.controller.dto.UserDto;
 import com.iot.devices.management.registry_service.persistence.model.AlertRule;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.UserBase;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import lombok.experimental.UtilityClass;
 import org.springframework.security.core.Authentication;
@@ -22,7 +23,7 @@ import static java.util.stream.Collectors.toSet;
 public class Utils {
 
     @SuppressWarnings({"BooleanMethodIsAlwaysInverted", "OptionalUsedAsFieldOrParameterType"})
-    public static boolean hasPermission(Authentication auth, Optional<User> owner) {
+    public static boolean hasPermission(Authentication auth, Optional<? extends UserBase> owner) {
         final UserRole authRole = getMinRoleLevel(auth);
         if (owner.isEmpty() && USER.equals(authRole)) {
             return false;

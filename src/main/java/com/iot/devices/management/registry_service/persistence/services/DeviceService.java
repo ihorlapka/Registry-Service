@@ -137,7 +137,7 @@ public class DeviceService {
     }
 
     @Transactional
-    public int removeById(@NonNull UUID deviceId, @Nullable User user) {
+    public int removeById(@NonNull UUID deviceId, @Nullable UserBase user) {
         try {
             final List<AlertRule> allAlertRules = ofNullable(user)
                     .map(u -> alertRulesRepository.findAlertRulesByUsername(u.getUsername()))

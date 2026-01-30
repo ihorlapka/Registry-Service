@@ -11,6 +11,7 @@ import com.iot.devices.management.registry_service.open.api.custom.annotations.d
 import com.iot.devices.management.registry_service.open.api.custom.annotations.devices.UpdateDeviceOpenApi;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.UserProjection;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
@@ -74,7 +75,7 @@ public class DeviceController {
     @RateLimiter(name = "get_device_limiter", fallbackMethod = "rateLimitFallback")
     public ResponseEntity<DeviceDto> getDevice(@PathVariable @NonNull UUID deviceId, Authentication auth) {
         final Optional<Device> device = deviceService.findByDeviceId(deviceId);
-        final Optional<User> owner = device.map(Device::getOwner);
+        final Optional<UserProjection> owner = userService.getUserProjectionByDevice(deviceId);
         if (!hasPermission(auth, owner)) {
             throw new PermissionDeniedException(auth.getName());
         }
@@ -90,7 +91,7 @@ public class DeviceController {
         if (device.isEmpty()) {
             throw new DeviceNotFoundException(deviceId);
         }
-        final Optional<User> owner = device.map(Device::getOwner);
+        final Optional<UserProjection> owner = userService.getUserProjectionByDevice(deviceId);
         if (!hasPermission(auth, owner)) {
             throw new PermissionDeniedException(auth.getName());
         }
@@ -104,7 +105,7 @@ public class DeviceController {
         if (device.isEmpty()) {
             throw new DeviceNotFoundException(deviceId);
         }
-        final Optional<User> owner = device.map(Device::getOwner);
+        final Optional<UserProjection> owner = userService.getUserProjectionByDevice(deviceId);
         return ResponseEntity.ok(new PermissionToDeviceResponse(hasPermission(auth, owner)));
     }
 

@@ -4,6 +4,7 @@ import com.iot.devices.management.registry_service.controller.errors.UserExcepti
 import com.iot.devices.management.registry_service.controller.util.CreateUserRequest;
 import com.iot.devices.management.registry_service.controller.util.PatchUserRequest;
 import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.UserProjection;
 import com.iot.devices.management.registry_service.persistence.model.enums.UserRole;
 import com.iot.devices.management.registry_service.persistence.repos.UsersRepository;
 import jakarta.validation.constraints.Email;
@@ -93,6 +94,10 @@ public class UserService {
     @Transactional
     public int updateLastLoginTime(UUID userId, OffsetDateTime loginTime) {
         return usersRepository.updateLastLoginTime(userId, loginTime);
+    }
+
+    public Optional<UserProjection> getUserProjectionByDevice(UUID deviceId) {
+        return usersRepository.findUserProjectionByDeviceId(deviceId);
     }
 
     @Caching(evict = {

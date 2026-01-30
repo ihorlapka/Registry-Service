@@ -27,7 +27,7 @@ import static jakarta.persistence.GenerationType.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements UserDetails {
+public class User implements UserDetails, UserBase {
 
     @Id
     @GeneratedValue(strategy = AUTO)

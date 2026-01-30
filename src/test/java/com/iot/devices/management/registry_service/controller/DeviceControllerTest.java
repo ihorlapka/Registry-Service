@@ -6,6 +6,7 @@ import com.iot.devices.management.registry_service.controller.util.CreateDeviceR
 import com.iot.devices.management.registry_service.controller.util.PatchDeviceRequest;
 import com.iot.devices.management.registry_service.persistence.model.Device;
 import com.iot.devices.management.registry_service.persistence.model.User;
+import com.iot.devices.management.registry_service.persistence.model.UserProjection;
 import com.iot.devices.management.registry_service.persistence.model.enums.DeviceManufacturer;
 import com.iot.devices.management.registry_service.persistence.model.enums.DeviceStatus;
 import com.iot.devices.management.registry_service.persistence.model.enums.DeviceType;
@@ -14,6 +15,7 @@ import com.iot.devices.management.registry_service.persistence.repos.TokenReposi
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
 import com.iot.devices.management.registry_service.security.*;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -303,20 +305,24 @@ class DeviceControllerTest {
     void getDevice() throws Exception {
         DEVICE.setOwner(USER);
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
+        when(userService.getUserProjectionByDevice(DEVICE.getId())).thenReturn(Optional.of(getUserProjection()));
         mockMvc.perform(get("/api/v1/devices/" + DEVICE.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
         verify(deviceService).findByDeviceId(any());
+        verify(userService).getUserProjectionByDevice(any());
     }
 
     @WithMockUser(username = "some_username", roles = "ADMIN")
     @Test
     void getDeviceAdmin() throws Exception {
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
+        when(userService.getUserProjectionByDevice(DEVICE.getId())).thenReturn(Optional.of(getUserProjection()));
         mockMvc.perform(get("/api/v1/devices/" + DEVICE.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
         verify(deviceService).findByDeviceId(any());
+        verify(userService).getUserProjectionByDevice(any());
     }
 
     @WithMockUser(username = "some_username", roles = "USER")
@@ -325,11 +331,17 @@ class DeviceControllerTest {
         DEVICE.setOwner(USER);
         when(deviceService.findByDeviceId(any())).thenReturn(Optional.of(DEVICE));
         when(deviceService.removeById(any(), eq(USER))).thenReturn(1);
+        when(userService.getUserProjectionByDevice(DEVICE.getId())).thenReturn(Optional.of(getUserProjection()));
         mockMvc.perform(delete("/api/v1/devices/" + DEVICE.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isNoContent());
-        verify(deviceService).removeById(any(), eq(USER));
+        verify(deviceService).removeById(any(), eq(getUserProjection()));
         verify(deviceService).findByDeviceId(any());
+        verify(userService).getUserProjectionByDevice(any());
+    }
+
+    private @NotNull UserProjection getUserProjection() {
+        return new UserProjection(USER.getId(), USER.getUsername(), USER.getUserRole());
     }
 
     @WithMockUser(username = "some_username", roles = "ADMIN")
@@ -342,5 +354,6 @@ class DeviceControllerTest {
                 .andExpect(status().isNoContent());
         verify(deviceService).removeById(any(), isNull());
         verify(deviceService).findByDeviceId(any());
+        verify(userService).getUserProjectionByDevice(any());
     }
 }
