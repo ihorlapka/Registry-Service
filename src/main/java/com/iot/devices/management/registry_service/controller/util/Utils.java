@@ -66,7 +66,7 @@ public class Utils {
                 device.getDeviceManufacturer(), device.getModel(), device.getDeviceType(),
                 device.getLocation(), device.getLatitude(), device.getLongitude(), ownerId,
                 device.getStatus(), device.getLastActiveAt(), device.getFirmwareVersion(),
-                device.getCreatedAt(), device.getUpdatedAt());
+                device.getCreatedAt(), device.getUpdatedAt(), device.getTelemetry());
     }
 
     public static UserDto mapUser(User saved) {
