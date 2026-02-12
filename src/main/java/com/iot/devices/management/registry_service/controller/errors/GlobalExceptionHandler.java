@@ -1,6 +1,7 @@
 package com.iot.devices.management.registry_service.controller.errors;
 
 import com.iot.devices.management.registry_service.controller.util.ErrorResponse;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import lombok.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -123,6 +124,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 URI.create(request.getDescription(false)),
                 emptyMap());
         return new ResponseEntity<>(response, INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(RequestNotPermitted.class)
+    public ResponseEntity<?> handleRateLimit(RequestNotPermitted ex, WebRequest request) {
+        final ErrorResponse response = ErrorResponse.of(
+                TOO_MANY_REQUESTS,
+                ex.getMessage(),
+                "Rate limiter was triggered!",
+                URI.create(request.getDescription(false)),
+                emptyMap());
+        return new ResponseEntity<>(response, TOO_MANY_REQUESTS);
     }
 
     @Override
