@@ -84,6 +84,31 @@ public class DeviceController {
                 .orElseThrow(() -> new DeviceNotFoundException(deviceId));
     }
 
+    @DeleteMapping("{deviceId}")
+    @RemoveDeviceByIdOpenApi
+    public ResponseEntity<Void> deleteDevice(@PathVariable @NonNull UUID deviceId, Authentication auth) {
+        final Optional<Device> device = deviceService.findByDeviceId(deviceId);
+        if (device.isEmpty()) {
+            throw new DeviceNotFoundException(deviceId);
+        }
+        final Optional<UserProjection> owner = userService.getUserProjectionByDevice(deviceId);
+        if (!hasPermission(auth, owner)) {
+            throw new PermissionDeniedException(auth.getName());
+        }
+        deviceService.removeById(deviceId, owner.orElse(null));
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("permission/{deviceId}")
+    public ResponseEntity<PermissionToDeviceResponse> checkPermissionToDevice(@PathVariable @NonNull UUID deviceId, Authentication auth) {
+        final Optional<Device> device = deviceService.findByDeviceId(deviceId);
+        if (device.isEmpty()) {
+            throw new DeviceNotFoundException(deviceId);
+        }
+        final Optional<UserProjection> owner = userService.getUserProjectionByDevice(deviceId);
+        return ResponseEntity.ok(new PermissionToDeviceResponse(hasPermission(auth, owner)));
+    }
+
     private Optional<User> loadUser(UUID userId) {
         return ofNullable(userId).flatMap(userService::findByUserId);
     }
