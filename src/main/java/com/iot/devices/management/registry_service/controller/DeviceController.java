@@ -14,6 +14,7 @@ import com.iot.devices.management.registry_service.persistence.model.User;
 import com.iot.devices.management.registry_service.persistence.model.UserProjection;
 import com.iot.devices.management.registry_service.persistence.services.DeviceService;
 import com.iot.devices.management.registry_service.persistence.services.UserService;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -107,6 +108,15 @@ public class DeviceController {
         }
         final Optional<UserProjection> owner = userService.getUserProjectionByDevice(deviceId);
         return ResponseEntity.ok(new PermissionToDeviceResponse(hasPermission(auth, owner)));
+    }
+
+    //not redundant, used when method getDevice() achieved max retries
+    public ResponseEntity<DeviceDto>  rateLimitFallback(UUID deviceId, Authentication auth, Throwable t) throws Throwable {
+        if (t instanceof RequestNotPermitted) {
+            log.error("RateLimiter fallback triggered, deviceId={}, user={}", deviceId, auth.getName(), t);
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
+        throw t;
     }
 
     private Optional<User> loadUser(UUID userId) {
