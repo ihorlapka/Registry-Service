@@ -9,7 +9,6 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.NonTransientDataAccessException;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.stereotype.Component;
 
@@ -60,15 +59,12 @@ public class ParallelDevicePatcher {
                     log.error("Failed to update device {} after retries, offset={} will be retried after consumer restart",
                             record.value(), record.offset(), e);
                     throw new CompletionException(e);
-                } catch (NullPointerException | IllegalArgumentException | NonTransientDataAccessException e ) {
+                } catch (Exception e) {
                     deadLetterProducer.send(record.key(), record.value());
                     log.error("Non-retriable error, failed to update {}, sending message to dead-letter-topic, offset={} will be committed",
                             record.value(), record.offset(), e);
                     offsetsToCommit.add(new OffsetAndMetadata(newOffsetToReadFrom));
                     kpiMetricLogger.incNonRetriableErrorsCount(e.getClass().getSimpleName());
-                } catch (Exception e) {
-                    log.error("Failed to patch device", e);
-                    throw new CompletionException(e);
                 }
             }, executorService));
         }
