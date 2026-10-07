@@ -72,7 +72,7 @@ public class UserController {
     @GetMapping("/all")
     @GetAllUsersOpenApi
     public ResponseEntity<List<UserDto>> getAllUsers(Pageable pageable) {
-        final Page<User> users = userService.findAll(pageable);
+        final Page<User> users = userService.findAllWithDevices(pageable);
         final List<UserDto> userDTOS = users.stream().map(Utils::mapUser).toList();
         return ResponseEntity.ok(userDTOS);
     }
@@ -80,7 +80,7 @@ public class UserController {
     @GetMapping("/me")
     @GetMyUserOpenApi
     public ResponseEntity<UserDto> getMyUser(Authentication auth) {
-        final Optional<User> user = userService.findByUsername(auth.getName());
+        final Optional<User> user = userService.findByUsernameWithDevices(auth.getName());
         if (user.isEmpty()) {
             throw new UserNotFoundException(auth.getName());
         }
@@ -98,7 +98,7 @@ public class UserController {
     @GetMapping("/username/{username}")
     @GetUserByUsernameOpenApi
     public ResponseEntity<UserDto> getUserByUsername(@PathVariable String username) {
-        final Optional<User> user = userService.findByUsername(username);
+        final Optional<User> user = userService.findByUsernameWithDevices(username);
         return user.map(u -> ResponseEntity.ok(mapUser(u)))
                 .orElseThrow(() -> new UserNotFoundException(username));
     }
@@ -106,7 +106,7 @@ public class UserController {
     @GetMapping("email/{email}")
     @GetUserByEmailOpenApi
     public ResponseEntity<UserDto> findByEmail(@PathVariable @Valid String email) {
-        final Optional<User> user = userService.findByEmail(email);
+        final Optional<User> user = userService.findByEmailWithDevices(email);
         return user.map(u -> ResponseEntity.ok(mapUser(u)))
                 .orElseThrow(() -> new UserNotFoundException(email));
     }

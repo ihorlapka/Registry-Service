@@ -192,11 +192,11 @@ class UserControllerTest {
     @WithMockUser(roles = {"ADMIN", "SUPER_ADMIN"})
     @Test
     void getAllUsers() throws Exception {
-        when(userService.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(listOf(USER)));
+        when(userService.findAllWithDevices(any(Pageable.class))).thenReturn(new PageImpl<>(listOf(USER)));
         mockMvc.perform(get("/api/v1/users/all")
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
-        verify(userService).findAll(any(Pageable.class));
+        verify(userService).findAllWithDevices(any(Pageable.class));
         verifyNoMoreInteractions(userService);
     }
 
@@ -244,33 +244,33 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN", username = "jonndoe123")
     @Test
     void getUserByUsername() throws Exception {
-        when(userService.findByUsername(any())).thenReturn(Optional.of(USER));
+        when(userService.findByUsernameWithDevices(any())).thenReturn(Optional.of(USER));
         mockMvc.perform(get("/api/v1/users/username/" + username)
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
-        verify(userService).findByUsername(any());
+        verify(userService).findByUsernameWithDevices(any());
         verifyNoMoreInteractions(userService);
     }
 
     @WithMockUser(roles = "USER", username = "jonndoe123")
     @Test
     void getMe() throws Exception {
-        when(userService.findByUsername(any())).thenReturn(Optional.of(USER));
+        when(userService.findByUsernameWithDevices(any())).thenReturn(Optional.of(USER));
         mockMvc.perform(get("/api/v1/users/me")
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
-        verify(userService).findByUsername(any());
+        verify(userService).findByUsernameWithDevices(any());
         verifyNoMoreInteractions(userService);
     }
 
     @WithMockUser(roles = "ADMIN", username = "jonndoe123")
     @Test
     void findByEmail() throws Exception {
-        when(userService.findByEmail(email)).thenReturn(Optional.of(USER));
+        when(userService.findByEmailWithDevices(email)).thenReturn(Optional.of(USER));
         mockMvc.perform(get("/api/v1/users/email/" + email)
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
-        verify(userService).findByEmail(any());
+        verify(userService).findByEmailWithDevices(any());
         verifyNoMoreInteractions(userService);
     }
 

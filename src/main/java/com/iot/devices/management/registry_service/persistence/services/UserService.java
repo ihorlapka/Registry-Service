@@ -40,14 +40,24 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Cacheable(value = USERS_CACHE, sync = true)
-    public Optional<User> findByEmail(@NonNull @NotBlank
+    public Optional<User> findByEmail(@NotBlank
                                       @Email(message = "Email must be valid")
                                       String email) {
         return usersRepository.findByEmail(email);
     }
 
+    public Optional<User> findByEmailWithDevices(@NotBlank
+                                                 @Email(message = "Email must be valid")
+                                                 String email) {
+        return usersRepository.findByEmailWithDevices(email);
+    }
+
     public Optional<User> findByUsername(@NonNull @NotBlank String username) {
         return usersRepository.findByUsername(username);
+    }
+
+    public Optional<User> findByUsernameWithDevices(@NonNull @NotBlank String username) {
+        return usersRepository.findByUsernameWithDevices(username);
     }
 
     @Transactional
@@ -98,6 +108,10 @@ public class UserService {
 
     public Optional<UserProjection> getUserProjectionByDevice(UUID deviceId) {
         return usersRepository.findUserProjectionByDeviceId(deviceId);
+    }
+
+    public Page<User> findAllWithDevices(Pageable pageable) {
+        return usersRepository.findAllWithDevices(pageable);
     }
 
     @Caching(evict = {

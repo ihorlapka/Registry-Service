@@ -24,7 +24,7 @@ import static jakarta.persistence.GenerationType.*;
                 @Index(name = "users_email_key", columnList = "email")
         }
 )
-@ToString
+@ToString(exclude = {"devices", "tokens"})
 @NoArgsConstructor
 @AllArgsConstructor
 public class User implements UserDetails, UserBase {
@@ -71,7 +71,7 @@ public class User implements UserDetails, UserBase {
 
     @OneToMany(mappedBy = "owner",
             cascade = CascadeType.ALL,
-            fetch = FetchType.EAGER,
+            fetch = FetchType.LAZY,
             orphanRemoval = true)
     private Set<Device> devices = new HashSet<>();
 

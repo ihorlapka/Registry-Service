@@ -437,7 +437,7 @@ class DeviceServiceTelemetriesUpdatesTest {
     }
 
     private Device getDeviceFromDb() {
-        Page<User> userPage = usersRepository.findAll(PageRequest.of(0, 1));
+        Page<User> userPage = usersRepository.findAllWithDevices(PageRequest.of(0, 1));
         Optional<User> userOptional = userPage.stream().findFirst();
         assertTrue(userOptional.isPresent());
         User user = userOptional.get();
