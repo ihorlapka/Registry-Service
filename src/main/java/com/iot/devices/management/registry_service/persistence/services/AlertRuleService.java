@@ -82,7 +82,7 @@ public class AlertRuleService {
                 }
                 sb.append(", removed from devices").append(request.deviceIdsToRemove());
             }
-            final Set<DeviceAlertRule> deviceAlertRules = deviceAlertRuleRepository.findByAlertRule(alertRule.get());
+            final Set<DeviceAlertRule> deviceAlertRules = deviceAlertRuleRepository.findAllByAlertRuleWithDevices(alertRule.get().getRuleId());
             final AlertRule alertRulePatched = patchAlertRule(request, alertRule.get(), user);
             alertRulesProducer.sendTransactionally(Map.of(alertRulePatched, getDeviceIds(deviceAlertRules)), emptySet());
             log.info("AlertRule is updated{}", sb);

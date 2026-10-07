@@ -15,13 +15,13 @@ public class DeviceAlertRule {
     @EmbeddedId
     private DeviceAlertRuleKey id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId("deviceId")
-    @JoinColumn(name = "device_id")
+    @JoinColumn(name = "device_id", nullable = false)
     private Device device;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId("ruleId")
-    @JoinColumn(name = "rule_id")
+    @JoinColumn(name = "rule_id", nullable = false)
     private AlertRule alertRule;
 }
